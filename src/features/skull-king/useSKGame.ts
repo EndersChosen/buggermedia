@@ -23,13 +23,35 @@ export function useSKGame(gameId: string) {
 
     const roundNumber = game.currentRound;
 
-    // Calculate scores for this round
+    // Calculate Loot alliance bonuses
+    const lootBonuses: Record<string, number> = {};
+    game.players.forEach((player) => {
+      lootBonuses[player.id] = 0;
+      const playerDetails = bonusDetails[player.id];
+      if (playerDetails?.lootAlliances && playerDetails.lootAlliances.length > 0) {
+        // Check if this player made their bid
+        const playerMadeBid = bids[player.id] === tricks[player.id];
+
+        if (playerMadeBid) {
+          // Check each alliance
+          playerDetails.lootAlliances.forEach((alliedPlayerId) => {
+            const alliedPlayerMadeBid = bids[alliedPlayerId] === tricks[alliedPlayerId];
+            if (alliedPlayerMadeBid) {
+              // Both players made their bid, award 20 points
+              lootBonuses[player.id] += 20;
+            }
+          });
+        }
+      }
+    });
+
+    // Calculate scores for this round (including Loot bonuses)
     const scores: Record<string, number> = {};
     game.players.forEach((player) => {
       scores[player.id] = calculateSKRoundScore({
         bid: bids[player.id] || 0,
         tricks: tricks[player.id] || 0,
-        bonusPoints: bonuses[player.id] || 0,
+        bonusPoints: (bonuses[player.id] || 0) + (lootBonuses[player.id] || 0),
         roundNumber,
       });
     });
@@ -66,13 +88,35 @@ export function useSKGame(gameId: string) {
   ) => {
     if (!game) return;
 
-    // Recalculate scores for the updated round
+    // Calculate Loot alliance bonuses
+    const lootBonuses: Record<string, number> = {};
+    game.players.forEach((player) => {
+      lootBonuses[player.id] = 0;
+      const playerDetails = bonusDetails[player.id];
+      if (playerDetails?.lootAlliances && playerDetails.lootAlliances.length > 0) {
+        // Check if this player made their bid
+        const playerMadeBid = bids[player.id] === tricks[player.id];
+
+        if (playerMadeBid) {
+          // Check each alliance
+          playerDetails.lootAlliances.forEach((alliedPlayerId) => {
+            const alliedPlayerMadeBid = bids[alliedPlayerId] === tricks[alliedPlayerId];
+            if (alliedPlayerMadeBid) {
+              // Both players made their bid, award 20 points
+              lootBonuses[player.id] += 20;
+            }
+          });
+        }
+      }
+    });
+
+    // Recalculate scores for the updated round (including Loot bonuses)
     const scores: Record<string, number> = {};
     game.players.forEach((player) => {
       scores[player.id] = calculateSKRoundScore({
         bid: bids[player.id] || 0,
         tricks: tricks[player.id] || 0,
-        bonusPoints: bonuses[player.id] || 0,
+        bonusPoints: (bonuses[player.id] || 0) + (lootBonuses[player.id] || 0),
         roundNumber,
       });
     });

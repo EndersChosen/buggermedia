@@ -45,6 +45,7 @@ export function SKScoreInput({ game, onAddRound, editingRound, onUpdateRound, on
       mermaidsCapturedByPirates: 0,
       piratesCapturedBySkullKing: 0,
       skullKingCapturedByMermaid: false,
+      lootAlliances: [],
     }]))
   );
 
@@ -79,6 +80,7 @@ export function SKScoreInput({ game, onAddRound, editingRound, onUpdateRound, on
           mermaidsCapturedByPirates: 0,
           piratesCapturedBySkullKing: 0,
           skullKingCapturedByMermaid: false,
+          lootAlliances: [],
         }])
       ));
       // Expand all players and bonuses when editing
@@ -94,9 +96,29 @@ export function SKScoreInput({ game, onAddRound, editingRound, onUpdateRound, on
   };
 
   const handleTrickChange = (playerId: string, value: string) => {
-    if (value === '' || (/^\d+$/.test(value) && parseInt(value) <= game.currentRound)) {
-      setTricks({ ...tricks, [playerId]: value });
+    // Basic validation: empty or valid number within round limit
+    if (value !== '' && !(/^\d+$/.test(value) && parseInt(value) <= game.currentRound)) {
+      return;
     }
+
+    // Calculate total tricks won by other players
+    const otherPlayersTricks = game.players
+      .filter(p => p.id !== playerId)
+      .reduce((sum, p) => {
+        const playerTricks = parseInt(tricks[p.id] || '0', 10);
+        return sum + playerTricks;
+      }, 0);
+
+    // Check if total tricks would exceed round number
+    const newPlayerTricks = value === '' ? 0 : parseInt(value, 10);
+    const totalTricks = otherPlayersTricks + newPlayerTricks;
+
+    if (totalTricks > game.currentRound) {
+      // Total tricks would exceed the round number, don't allow it
+      return;
+    }
+
+    setTricks({ ...tricks, [playerId]: value });
   };
 
   const handleBonusChange = (playerId: string, value: number, details: SKBonusDetails) => {
@@ -180,6 +202,7 @@ export function SKScoreInput({ game, onAddRound, editingRound, onUpdateRound, on
       mermaidsCapturedByPirates: 0,
       piratesCapturedBySkullKing: 0,
       skullKingCapturedByMermaid: false,
+      lootAlliances: [],
     }])));
     setExpandedPlayers(Object.fromEntries(game.players.map((p) => [p.id, true])));
     setExpandedBonuses(Object.fromEntries(game.players.map((p) => [p.id, false])));
@@ -200,15 +223,38 @@ export function SKScoreInput({ game, onAddRound, editingRound, onUpdateRound, on
     });
   };
 
+  const getRemainingTricks = (): number => {
+    const totalTricks = game.players.reduce((sum, p) => {
+      const playerTricks = parseInt(tricks[p.id] || '0', 10);
+      return sum + playerTricks;
+    }, 0);
+    return game.currentRound - totalTricks;
+  };
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>
-          {editingRound ? 'Edit ' : ''}Round {editingRound?.roundNumber || game.currentRound}
-        </CardTitle>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          {editingRound?.roundNumber || game.currentRound} card{(editingRound?.roundNumber || game.currentRound) > 1 ? 's' : ''} this round
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>
+              {editingRound ? 'Edit ' : ''}Round {editingRound?.roundNumber || game.currentRound}
+            </CardTitle>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              {editingRound?.roundNumber || game.currentRound} card{(editingRound?.roundNumber || game.currentRound) > 1 ? 's' : ''} this round
+            </p>
+          </div>
+          {!editingRound && (
+            <div className="text-right">
+              <p className="text-xs text-gray-500 dark:text-gray-400">Tricks Not Won</p>
+              <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                {getRemainingTricks()}
+              </p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                (Escape/Kraken)
+              </p>
+            </div>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
@@ -298,11 +344,13 @@ export function SKScoreInput({ game, onAddRound, editingRound, onUpdateRound, on
                       <div className="mt-3">
                         <SKPlayerBonusInput
                           playerName={player.name}
+                          playerId={player.id}
                           bid={bids[player.id]}
                           tricks={tricks[player.id]}
                           onBonusChange={(bonus, details) => handleBonusChange(player.id, bonus, details)}
                           initialBonusDetails={editingRound ? bonusDetails[player.id] : undefined}
                           bonusLimits={calculateBonusLimits(player.id)}
+                          availablePlayers={game.players.filter(p => p.id !== player.id)}
                         />
                       </div>
                     )}

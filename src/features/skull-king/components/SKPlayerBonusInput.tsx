@@ -9,6 +9,7 @@ interface BonusState {
   mermaidsCapturedByPirates: number;
   piratesCapturedBySkullKing: number;
   skullKingCapturedByMermaid: boolean;
+  lootAlliances?: string[];
 }
 
 interface BonusLimits {
@@ -23,20 +24,24 @@ interface BonusLimits {
 
 interface SKPlayerBonusInputProps {
   playerName: string;
+  playerId: string;
   bid: string;
   tricks: string;
   onBonusChange: (totalBonus: number, bonusDetails: SKBonusDetails) => void;
   initialBonusDetails?: SKBonusDetails;
   bonusLimits: BonusLimits;
+  availablePlayers: Array<{ id: string; name: string }>; // Other players for Loot alliances
 }
 
 export function SKPlayerBonusInput({
   playerName,
+  playerId,
   bid,
   tricks,
   onBonusChange,
   initialBonusDetails,
   bonusLimits,
+  availablePlayers,
 }: SKPlayerBonusInputProps) {
   const [bonuses, setBonuses] = useState<BonusState>(initialBonusDetails || {
     yellow14: false,
@@ -46,6 +51,7 @@ export function SKPlayerBonusInput({
     mermaidsCapturedByPirates: 0,
     piratesCapturedBySkullKing: 0,
     skullKingCapturedByMermaid: false,
+    lootAlliances: [],
   });
 
   // Check if player is eligible for bonuses (bid must equal tricks AND must have won at least 1 trick)
@@ -77,6 +83,7 @@ export function SKPlayerBonusInput({
         mermaidsCapturedByPirates: 0,
         piratesCapturedBySkullKing: 0,
         skullKingCapturedByMermaid: false,
+        lootAlliances: [],
       });
     }
   }, [initialBonusDetails]);
@@ -101,6 +108,25 @@ export function SKPlayerBonusInput({
         cappedValue = Math.min(numValue, bonusLimits.piratesRemaining);
       }
       setBonuses({ ...bonuses, [field]: cappedValue });
+    }
+  };
+
+  const handleLootAllianceToggle = (alliedPlayerId: string) => {
+    const currentAlliances = bonuses.lootAlliances || [];
+    const isCurrentlyAllied = currentAlliances.includes(alliedPlayerId);
+
+    if (isCurrentlyAllied) {
+      // Remove alliance
+      setBonuses({
+        ...bonuses,
+        lootAlliances: currentAlliances.filter(id => id !== alliedPlayerId)
+      });
+    } else {
+      // Add alliance
+      setBonuses({
+        ...bonuses,
+        lootAlliances: [...currentAlliances, alliedPlayerId]
+      });
     }
   };
 
@@ -239,6 +265,38 @@ export function SKPlayerBonusInput({
           </span>
         </label>
       </div>
+
+      {/* Loot Card Alliances */}
+      {availablePlayers.length > 0 && (
+        <div className="space-y-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+          <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+            Loot Card Alliances (20 pts each if both players make their bid)
+          </p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            Select players you formed an alliance with via Loot card
+          </p>
+          <div className="space-y-2">
+            {availablePlayers.map((player) => (
+              <label key={player.id} className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={(bonuses.lootAlliances || []).includes(player.id)}
+                  onChange={() => handleLootAllianceToggle(player.id)}
+                  className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700 dark:text-gray-300">
+                  Allied with {player.name}
+                </span>
+              </label>
+            ))}
+          </div>
+          {(bonuses.lootAlliances || []).length > 0 && (
+            <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
+              Note: Loot bonuses are awarded only if both you and your ally make your bids
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

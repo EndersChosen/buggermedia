@@ -42,6 +42,7 @@ export interface SKBonusDetails {
   mermaidsCapturedByPirates: number;
   piratesCapturedBySkullKing: number;
   skullKingCapturedByMermaid: boolean;
+  lootAlliances?: string[]; // Array of player IDs this player is allied with via Loot cards
 }
 
 export interface SKRound {
