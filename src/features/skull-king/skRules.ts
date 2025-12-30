@@ -16,7 +16,7 @@ export const skRules: GameRules = {
     'Escape cards always lose but can save you from negative points',
   ],
   scoring: [
-    'If you make your bid exactly: Earn 20 points per trick bid, plus 10 bonus points',
+    'If you make your bid exactly: Earn 20 points per trick bid',
     'If you miss your bid: Lose 10 points for each trick difference',
     'Zero bid success: 10 points × number of cards dealt that round',
     'Zero bid failure: -10 points × number of cards dealt that round',
@@ -229,11 +229,10 @@ STRATEGY: Ultimate flexibility! Use it as whatever you need at the moment.`,
             title: 'Successful Bid (Exact Match)',
             content: `If you won EXACTLY the number of tricks you bid:
 
-BASE SCORE: 20 points × number of tricks bid
-BONUS: +10 points
-EXAMPLE: Bid 3, won 3 tricks = (20 × 3) + 10 = 70 points
+SCORE: 20 points × number of tricks bid
+EXAMPLE: Bid 3, won 3 tricks = 20 × 3 = 60 points
 
-This is true even for a bid of 0!`,
+Any bonus points from special card captures are added to this base score.`,
           },
           {
             id: 'failed-bid',
@@ -388,7 +387,7 @@ DEALER ADVANTAGE:
 7. Escape cards (always lose)
 
 SCORING:
-✓ Exact bid: 20 × tricks + 10 bonus
+✓ Exact bid: 20 × tricks
 ✗ Wrong bid: -10 × difference
 ✓ Zero bid success: 10 × round number
 ✗ Zero bid fail: -10 × round number

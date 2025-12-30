@@ -27,8 +27,8 @@ export function calculateSKRoundScore({
 
   // Regular bid handling
   if (bid === tricks) {
-    // Success: 20 points per trick + 10 bonus + any special bonuses
-    return bid * 20 + 10 + bonusPoints;
+    // Success: 20 points per trick + any special bonuses
+    return bid * 20 + bonusPoints;
   } else {
     // Failure: -10 points per difference (bonuses not counted)
     const difference = Math.abs(bid - tricks);
