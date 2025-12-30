@@ -48,8 +48,8 @@ export function SKPlayerBonusInput({
     skullKingCapturedByMermaid: false,
   });
 
-  // Check if player is eligible for bonuses (bid must equal tricks)
-  const isBonusEligible = bid !== '' && tricks !== '' && bid === tricks;
+  // Check if player is eligible for bonuses (bid must equal tricks AND must have won at least 1 trick)
+  const isBonusEligible = bid !== '' && tricks !== '' && bid === tricks && parseInt(tricks, 10) > 0;
 
   const calculateTotal = (state: BonusState): number => {
     let total = 0;
@@ -107,26 +107,13 @@ export function SKPlayerBonusInput({
   const totalBonus = calculateTotal(bonuses);
 
   return (
-    <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-3">
-      <div className="flex items-center justify-between mb-3">
-        <div>
-          <h4 className="font-medium text-gray-900 dark:text-white">{playerName}</h4>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            Bid: {bid || '?'} | Tricks: {tricks || '?'}
-          </p>
-        </div>
-        <div className="text-right">
-          <p className="text-sm text-gray-500 dark:text-gray-400">Bonus</p>
-          <p className="text-lg font-bold text-blue-600 dark:text-blue-400">
-            +{totalBonus}
-          </p>
-        </div>
-      </div>
-
+    <div className="space-y-3">
       {!isBonusEligible && (
         <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded p-3 mb-3">
           <p className="text-sm text-yellow-800 dark:text-yellow-200">
-            Bonus points only available when bid matches tricks won
+            {bid !== '' && tricks !== '' && bid === tricks && parseInt(tricks, 10) === 0
+              ? 'No bonuses available - must win at least 1 trick'
+              : 'Bonus points only available when bid matches tricks won'}
           </p>
         </div>
       )}

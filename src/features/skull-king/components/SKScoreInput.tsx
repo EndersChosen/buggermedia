@@ -3,7 +3,7 @@ import { SKGameSession, SKRound, SKBonusDetails } from '@/@types/game.types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
-import { PlusCircle, ChevronRight, Save, X } from 'lucide-react';
+import { PlusCircle, Save, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { calculateSKRoundScore } from '../skCalculations';
 import { SKPlayerBonusInput } from './SKPlayerBonusInput';
 
@@ -26,10 +26,7 @@ interface SKScoreInputProps {
   onCancelEdit?: () => void;
 }
 
-type InputStep = 'bids' | 'tricks' | 'bonuses';
-
 export function SKScoreInput({ game, onAddRound, editingRound, onUpdateRound, onCancelEdit }: SKScoreInputProps) {
-  const [step, setStep] = useState<InputStep>('bids');
   const [bids, setBids] = useState<Record<string, string>>(
     Object.fromEntries(game.players.map((p) => [p.id, '']))
   );
@@ -49,6 +46,16 @@ export function SKScoreInput({ game, onAddRound, editingRound, onUpdateRound, on
       piratesCapturedBySkullKing: 0,
       skullKingCapturedByMermaid: false,
     }]))
+  );
+
+  // Track which player cards are expanded
+  const [expandedPlayers, setExpandedPlayers] = useState<Record<string, boolean>>(
+    Object.fromEntries(game.players.map((p) => [p.id, true]))
+  );
+
+  // Track which bonus sections are expanded
+  const [expandedBonuses, setExpandedBonuses] = useState<Record<string, boolean>>(
+    Object.fromEntries(game.players.map((p) => [p.id, false]))
   );
 
   // Pre-fill data when editing
@@ -74,7 +81,9 @@ export function SKScoreInput({ game, onAddRound, editingRound, onUpdateRound, on
           skullKingCapturedByMermaid: false,
         }])
       ));
-      setStep('bids');
+      // Expand all players and bonuses when editing
+      setExpandedPlayers(Object.fromEntries(game.players.map((p) => [p.id, true])));
+      setExpandedBonuses(Object.fromEntries(game.players.map((p) => [p.id, true])));
     }
   }, [editingRound, game.players]);
 
@@ -93,6 +102,14 @@ export function SKScoreInput({ game, onAddRound, editingRound, onUpdateRound, on
   const handleBonusChange = (playerId: string, value: number, details: SKBonusDetails) => {
     setBonuses(prev => ({ ...prev, [playerId]: value }));
     setBonusDetails(prev => ({ ...prev, [playerId]: details }));
+  };
+
+  const togglePlayerExpanded = (playerId: string) => {
+    setExpandedPlayers(prev => ({ ...prev, [playerId]: !prev[playerId] }));
+  };
+
+  const toggleBonusExpanded = (playerId: string) => {
+    setExpandedBonuses(prev => ({ ...prev, [playerId]: !prev[playerId] }));
   };
 
   // Calculate what bonuses are available for a specific player
@@ -134,14 +151,6 @@ export function SKScoreInput({ game, onAddRound, editingRound, onUpdateRound, on
     return limits;
   };
 
-  const handleNextStep = () => {
-    if (step === 'bids') {
-      setStep('tricks');
-    } else if (step === 'tricks') {
-      setStep('bonuses');
-    }
-  };
-
   const handleSubmit = () => {
     const numericBids: Record<string, number> = {};
     const numericTricks: Record<string, number> = {};
@@ -160,7 +169,6 @@ export function SKScoreInput({ game, onAddRound, editingRound, onUpdateRound, on
     }
 
     // Reset
-    setStep('bids');
     setBids(Object.fromEntries(game.players.map((p) => [p.id, ''])));
     setTricks(Object.fromEntries(game.players.map((p) => [p.id, ''])));
     setBonuses(Object.fromEntries(game.players.map((p) => [p.id, 0])));
@@ -173,10 +181,13 @@ export function SKScoreInput({ game, onAddRound, editingRound, onUpdateRound, on
       piratesCapturedBySkullKing: 0,
       skullKingCapturedByMermaid: false,
     }])));
+    setExpandedPlayers(Object.fromEntries(game.players.map((p) => [p.id, true])));
+    setExpandedBonuses(Object.fromEntries(game.players.map((p) => [p.id, false])));
   };
 
-  const isBidsValid = game.players.every((player) => bids[player.id] !== '');
-  const isTricksValid = game.players.every((player) => tricks[player.id] !== '');
+  const isFormValid = game.players.every((player) =>
+    bids[player.id] !== '' && tricks[player.id] !== ''
+  );
 
   const getPreviewScore = (playerId: string): number | null => {
     if (!bids[playerId] || !tricks[playerId]) return null;
@@ -193,61 +204,37 @@ export function SKScoreInput({ game, onAddRound, editingRound, onUpdateRound, on
     <Card>
       <CardHeader>
         <CardTitle>
-          {editingRound ? 'Edit ' : ''}Round {editingRound?.roundNumber || game.currentRound} - {step === 'bids' ? 'Enter Bids' : step === 'tricks' ? 'Enter Tricks' : 'Enter Bonuses'}
+          {editingRound ? 'Edit ' : ''}Round {editingRound?.roundNumber || game.currentRound}
         </CardTitle>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
           {editingRound?.roundNumber || game.currentRound} card{(editingRound?.roundNumber || game.currentRound) > 1 ? 's' : ''} this round
-          {step === 'bids' && ' - How many tricks will you win?'}
-          {step === 'tricks' && ' - How many tricks did you actually win?'}
-          {step === 'bonuses' && ' - Bonus points (optional)'}
         </p>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          {step === 'bids' && (
-            <>
-              {game.players.map((player) => (
-                <Input
-                  key={player.id}
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  label={player.name}
-                  placeholder={`Bid (0-${game.currentRound})`}
-                  value={bids[player.id]}
-                  onChange={(e) => handleBidChange(player.id, e.target.value)}
-                  helperText={`Max bid: ${game.currentRound}`}
-                />
-              ))}
-              <Button
-                onClick={handleNextStep}
-                disabled={!isBidsValid}
-                className="w-full mt-4"
-              >
-                Next: Enter Tricks
-                <ChevronRight className="w-5 h-5 ml-2" />
-              </Button>
-            </>
-          )}
+          {/* Player Cards */}
+          {game.players.map((player) => {
+            const previewScore = getPreviewScore(player.id);
+            const isExpanded = expandedPlayers[player.id];
+            const isBonusExpanded = expandedBonuses[player.id];
 
-          {step === 'tricks' && (
-            <>
-              {game.players.map((player) => {
-                const previewScore = getPreviewScore(player.id);
-                return (
-                  <div key={player.id}>
-                    <Input
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      label={`${player.name} (bid: ${bids[player.id]})`}
-                      placeholder={`Tricks won (0-${game.currentRound})`}
-                      value={tricks[player.id]}
-                      onChange={(e) => handleTrickChange(player.id, e.target.value)}
-                    />
+            return (
+              <div
+                key={player.id}
+                className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
+              >
+                {/* Player Card Header */}
+                <button
+                  onClick={() => togglePlayerExpanded(player.id)}
+                  className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex items-center justify-between"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="font-medium text-gray-900 dark:text-white">
+                      {player.name}
+                    </span>
                     {previewScore !== null && (
-                      <p
-                        className={`text-sm mt-1 font-medium ${
+                      <span
+                        className={`text-sm font-medium ${
                           previewScore > 0
                             ? 'text-green-600 dark:text-green-400'
                             : previewScore < 0
@@ -255,100 +242,106 @@ export function SKScoreInput({ game, onAddRound, editingRound, onUpdateRound, on
                             : 'text-gray-600 dark:text-gray-400'
                         }`}
                       >
-                        Score: {previewScore > 0 ? '+' : ''}
-                        {previewScore}
-                      </p>
+                        {previewScore > 0 ? '+' : ''}{previewScore}
+                      </span>
                     )}
                   </div>
-                );
-              })}
-              <div className="flex gap-3 mt-4">
-                <Button
-                  variant="secondary"
-                  onClick={() => setStep('bids')}
-                  className="flex-1"
-                >
-                  Back
-                </Button>
-                <Button
-                  onClick={handleNextStep}
-                  disabled={!isTricksValid}
-                  className="flex-1"
-                >
-                  Next: Bonuses
-                  <ChevronRight className="w-5 h-5 ml-2" />
-                </Button>
-              </div>
-            </>
-          )}
-
-          {step === 'bonuses' && (
-            <>
-              <div className="space-y-4">
-                {game.players.map((player) => {
-                  const previewScore = getPreviewScore(player.id);
-                  return (
-                    <div key={player.id} className="space-y-2">
-                      <SKPlayerBonusInput
-                        playerName={player.name}
-                        bid={bids[player.id]}
-                        tricks={tricks[player.id]}
-                        onBonusChange={(bonus, details) => handleBonusChange(player.id, bonus, details)}
-                        initialBonusDetails={editingRound ? bonusDetails[player.id] : undefined}
-                        bonusLimits={calculateBonusLimits(player.id)}
-                      />
-                      {previewScore !== null && (
-                        <p
-                          className={`text-sm font-medium text-center ${
-                            previewScore > 0
-                              ? 'text-green-600 dark:text-green-400'
-                              : previewScore < 0
-                              ? 'text-red-600 dark:text-red-400'
-                              : 'text-gray-600 dark:text-gray-400'
-                          }`}
-                        >
-                          Final Score: {previewScore > 0 ? '+' : ''}
-                          {previewScore}
-                        </p>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-              <div className="flex gap-3 mt-4">
-                <Button
-                  variant="secondary"
-                  onClick={() => setStep('tricks')}
-                  className="flex-1"
-                >
-                  Back
-                </Button>
-                {editingRound && onCancelEdit && (
-                  <Button
-                    variant="secondary"
-                    onClick={onCancelEdit}
-                    className="flex-1"
-                  >
-                    <X className="w-5 h-5 mr-2" />
-                    Cancel
-                  </Button>
-                )}
-                <Button onClick={handleSubmit} className="flex-1">
-                  {editingRound ? (
-                    <>
-                      <Save className="w-5 h-5 mr-2" />
-                      Save Changes
-                    </>
+                  {isExpanded ? (
+                    <ChevronUp className="w-5 h-5 text-gray-500" />
                   ) : (
-                    <>
-                      <PlusCircle className="w-5 h-5 mr-2" />
-                      Complete Round
-                    </>
+                    <ChevronDown className="w-5 h-5 text-gray-500" />
                   )}
-                </Button>
+                </button>
+
+                {/* Player Card Content */}
+                {isExpanded && (
+                  <div className="p-4 space-y-4">
+                    {/* Bid and Tricks in a grid */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        label="Bid"
+                        placeholder={`0-${game.currentRound}`}
+                        value={bids[player.id]}
+                        onChange={(e) => handleBidChange(player.id, e.target.value)}
+                      />
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        label="Tricks Won"
+                        placeholder={`0-${game.currentRound}`}
+                        value={tricks[player.id]}
+                        onChange={(e) => handleTrickChange(player.id, e.target.value)}
+                      />
+                    </div>
+
+                    {/* Bonus Section Toggle */}
+                    <button
+                      onClick={() => toggleBonusExpanded(player.id)}
+                      className="w-full py-2 px-3 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg flex items-center justify-between transition-colors"
+                    >
+                      <span className="text-sm font-medium">
+                        Bonus Points {bonuses[player.id] > 0 && `(+${bonuses[player.id]})`}
+                      </span>
+                      {isBonusExpanded ? (
+                        <ChevronUp className="w-4 h-4" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4" />
+                      )}
+                    </button>
+
+                    {/* Bonus Input (Expandable) */}
+                    {isBonusExpanded && (
+                      <div className="mt-3">
+                        <SKPlayerBonusInput
+                          playerName={player.name}
+                          bid={bids[player.id]}
+                          tricks={tricks[player.id]}
+                          onBonusChange={(bonus, details) => handleBonusChange(player.id, bonus, details)}
+                          initialBonusDetails={editingRound ? bonusDetails[player.id] : undefined}
+                          bonusLimits={calculateBonusLimits(player.id)}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-            </>
-          )}
+            );
+          })}
+
+          {/* Action Buttons */}
+          <div className="flex gap-3 pt-4">
+            {editingRound && onCancelEdit && (
+              <Button
+                variant="secondary"
+                onClick={onCancelEdit}
+                className="flex-1"
+              >
+                <X className="w-5 h-5 mr-2" />
+                Cancel
+              </Button>
+            )}
+            <Button
+              onClick={handleSubmit}
+              disabled={!isFormValid}
+              className="flex-1"
+            >
+              {editingRound ? (
+                <>
+                  <Save className="w-5 h-5 mr-2" />
+                  Save Changes
+                </>
+              ) : (
+                <>
+                  <PlusCircle className="w-5 h-5 mr-2" />
+                  Complete Round
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>
