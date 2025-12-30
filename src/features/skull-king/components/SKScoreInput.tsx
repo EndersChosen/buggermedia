@@ -95,6 +95,45 @@ export function SKScoreInput({ game, onAddRound, editingRound, onUpdateRound, on
     setBonusDetails(prev => ({ ...prev, [playerId]: details }));
   };
 
+  // Calculate what bonuses are available for a specific player
+  const calculateBonusLimits = (currentPlayerId: string) => {
+    // Start with max availability
+    const limits = {
+      yellow14Available: true,
+      purple14Available: true,
+      green14Available: true,
+      black14Available: true,
+      mermaidsRemaining: 2,
+      piratesRemaining: 5,
+      skullKingAvailable: true,
+    };
+
+    // Check what other players have claimed
+    game.players.forEach((player) => {
+      if (player.id === currentPlayerId) return; // Skip current player
+
+      const playerBonusDetails = bonusDetails[player.id];
+      if (!playerBonusDetails) return;
+
+      // Check #14 cards
+      if (playerBonusDetails.yellow14) limits.yellow14Available = false;
+      if (playerBonusDetails.purple14) limits.purple14Available = false;
+      if (playerBonusDetails.green14) limits.green14Available = false;
+      if (playerBonusDetails.black14) limits.black14Available = false;
+
+      // Count special cards
+      limits.mermaidsRemaining -= playerBonusDetails.mermaidsCapturedByPirates;
+      limits.piratesRemaining -= playerBonusDetails.piratesCapturedBySkullKing;
+      if (playerBonusDetails.skullKingCapturedByMermaid) limits.skullKingAvailable = false;
+    });
+
+    // Ensure counts don't go negative
+    limits.mermaidsRemaining = Math.max(0, limits.mermaidsRemaining);
+    limits.piratesRemaining = Math.max(0, limits.piratesRemaining);
+
+    return limits;
+  };
+
   const handleNextStep = () => {
     if (step === 'bids') {
       setStep('tricks');
@@ -256,6 +295,7 @@ export function SKScoreInput({ game, onAddRound, editingRound, onUpdateRound, on
                         tricks={tricks[player.id]}
                         onBonusChange={(bonus, details) => handleBonusChange(player.id, bonus, details)}
                         initialBonusDetails={editingRound ? bonusDetails[player.id] : undefined}
+                        bonusLimits={calculateBonusLimits(player.id)}
                       />
                       {previewScore !== null && (
                         <p
