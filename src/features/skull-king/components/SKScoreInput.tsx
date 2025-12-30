@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { PlusCircle, ChevronRight } from 'lucide-react';
 import { calculateSKRoundScore } from '../skCalculations';
+import { SKPlayerBonusInput } from './SKPlayerBonusInput';
 
 interface SKScoreInputProps {
   game: SKGameSession;
@@ -25,8 +26,8 @@ export function SKScoreInput({ game, onAddRound }: SKScoreInputProps) {
   const [tricks, setTricks] = useState<Record<string, string>>(
     Object.fromEntries(game.players.map((p) => [p.id, '']))
   );
-  const [bonuses, setBonuses] = useState<Record<string, string>>(
-    Object.fromEntries(game.players.map((p) => [p.id, '']))
+  const [bonuses, setBonuses] = useState<Record<string, number>>(
+    Object.fromEntries(game.players.map((p) => [p.id, 0]))
   );
 
   const handleBidChange = (playerId: string, value: string) => {
@@ -41,10 +42,8 @@ export function SKScoreInput({ game, onAddRound }: SKScoreInputProps) {
     }
   };
 
-  const handleBonusChange = (playerId: string, value: string) => {
-    if (value === '' || /^\d+$/.test(value)) {
-      setBonuses({ ...bonuses, [playerId]: value });
-    }
+  const handleBonusChange = (playerId: string, value: number) => {
+    setBonuses({ ...bonuses, [playerId]: value });
   };
 
   const handleNextStep = () => {
@@ -58,21 +57,19 @@ export function SKScoreInput({ game, onAddRound }: SKScoreInputProps) {
   const handleSubmit = () => {
     const numericBids: Record<string, number> = {};
     const numericTricks: Record<string, number> = {};
-    const numericBonuses: Record<string, number> = {};
 
     game.players.forEach((player) => {
       numericBids[player.id] = parseInt(bids[player.id] || '0', 10);
       numericTricks[player.id] = parseInt(tricks[player.id] || '0', 10);
-      numericBonuses[player.id] = parseInt(bonuses[player.id] || '0', 10);
     });
 
-    onAddRound(numericBids, numericTricks, numericBonuses);
+    onAddRound(numericBids, numericTricks, bonuses);
 
     // Reset
     setStep('bids');
     setBids(Object.fromEntries(game.players.map((p) => [p.id, ''])));
     setTricks(Object.fromEntries(game.players.map((p) => [p.id, ''])));
-    setBonuses(Object.fromEntries(game.players.map((p) => [p.id, ''])));
+    setBonuses(Object.fromEntries(game.players.map((p) => [p.id, 0])));
   };
 
   const isBidsValid = game.players.every((player) => bids[player.id] !== '');
@@ -84,7 +81,7 @@ export function SKScoreInput({ game, onAddRound }: SKScoreInputProps) {
     return calculateSKRoundScore({
       bid: parseInt(bids[playerId], 10),
       tricks: parseInt(tricks[playerId], 10),
-      bonusPoints: parseInt(bonuses[playerId] || '0', 10),
+      bonusPoints: bonuses[playerId] || 0,
       roundNumber: game.currentRound,
     });
   };
@@ -184,37 +181,35 @@ export function SKScoreInput({ game, onAddRound }: SKScoreInputProps) {
 
           {step === 'bonuses' && (
             <>
-              {game.players.map((player) => {
-                const previewScore = getPreviewScore(player.id);
-                return (
-                  <div key={player.id}>
-                    <Input
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      label={`${player.name} (bid: ${bids[player.id]}, tricks: ${tricks[player.id]})`}
-                      placeholder="Bonus points (0 if none)"
-                      value={bonuses[player.id]}
-                      onChange={(e) => handleBonusChange(player.id, e.target.value)}
-                      helperText="Pirates, Skull King, Mermaids"
-                    />
-                    {previewScore !== null && (
-                      <p
-                        className={`text-sm mt-1 font-medium ${
-                          previewScore > 0
-                            ? 'text-green-600 dark:text-green-400'
-                            : previewScore < 0
-                            ? 'text-red-600 dark:text-red-400'
-                            : 'text-gray-600 dark:text-gray-400'
-                        }`}
-                      >
-                        Final Score: {previewScore > 0 ? '+' : ''}
-                        {previewScore}
-                      </p>
-                    )}
-                  </div>
-                );
-              })}
+              <div className="space-y-4">
+                {game.players.map((player) => {
+                  const previewScore = getPreviewScore(player.id);
+                  return (
+                    <div key={player.id} className="space-y-2">
+                      <SKPlayerBonusInput
+                        playerName={player.name}
+                        bid={bids[player.id]}
+                        tricks={tricks[player.id]}
+                        onBonusChange={(bonus) => handleBonusChange(player.id, bonus)}
+                      />
+                      {previewScore !== null && (
+                        <p
+                          className={`text-sm font-medium text-center ${
+                            previewScore > 0
+                              ? 'text-green-600 dark:text-green-400'
+                              : previewScore < 0
+                              ? 'text-red-600 dark:text-red-400'
+                              : 'text-gray-600 dark:text-gray-400'
+                          }`}
+                        >
+                          Final Score: {previewScore > 0 ? '+' : ''}
+                          {previewScore}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
               <div className="flex gap-3 mt-4">
                 <Button
                   variant="secondary"
