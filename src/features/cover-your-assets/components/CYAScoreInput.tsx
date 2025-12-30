@@ -52,7 +52,7 @@ export function CYAScoreInput({ game, onAddRound }: CYAScoreInputProps) {
     <Card>
       <CardHeader>
         <CardTitle>Add Round Scores</CardTitle>
-        <p className="text-sm text-gray-500 mt-1">
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
           Round {game.rounds.length + 1}
         </p>
       </CardHeader>

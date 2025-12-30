@@ -82,8 +82,8 @@ export function GameSelectionPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Choose Your Game</h1>
-        <p className="text-gray-600">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Choose Your Game</h1>
+        <p className="text-gray-600 dark:text-gray-300">
           Select a game to start tracking scores, or continue an existing game below
         </p>
       </div>
@@ -92,7 +92,7 @@ export function GameSelectionPage() {
 
       {activeGames.length > 0 && (
         <div className="mt-12">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Active Games</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Active Games</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {activeGames.map((game) => (
               <Card key={game.id}>
@@ -104,13 +104,13 @@ export function GameSelectionPage() {
                           ? 'Cover Your Assets'
                           : 'Skull King'}
                       </CardTitle>
-                      <p className="text-sm text-gray-500 mt-1">
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                         {new Date(game.startTime).toLocaleDateString()}
                       </p>
                     </div>
                     <button
                       onClick={() => handleDeleteGame(game.id)}
-                      className="text-gray-400 hover:text-red-600 transition-colors"
+                      className="text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 transition-colors"
                     >
                       <Trash2 className="w-5 h-5" />
                     </button>
@@ -149,7 +149,7 @@ export function GameSelectionPage() {
         size="md"
       >
         <div className="space-y-4">
-          <p className="text-gray-600">
+          <p className="text-gray-600 dark:text-gray-300">
             Enter player names ({selectedGame?.minPlayers}-{selectedGame?.maxPlayers}{' '}
             players)
           </p>

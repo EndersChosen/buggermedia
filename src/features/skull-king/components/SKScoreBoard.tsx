@@ -18,7 +18,7 @@ export function SKScoreBoard({ game }: SKScoreBoardProps) {
     <Card>
       <CardHeader>
         <CardTitle>Scoreboard</CardTitle>
-        <p className="text-sm text-gray-500 mt-1">
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
           Round {game.rounds.length} of 10 completed
         </p>
       </CardHeader>
@@ -26,12 +26,12 @@ export function SKScoreBoard({ game }: SKScoreBoardProps) {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-200">
-                <th className="text-left py-2 px-2 font-semibold text-gray-700">Rd</th>
+              <tr className="border-b border-gray-200 dark:border-gray-700">
+                <th className="text-left py-2 px-2 font-semibold text-gray-700 dark:text-gray-300">Rd</th>
                 {game.players.map((player) => (
                   <th
                     key={player.id}
-                    className="text-center py-2 px-2 font-semibold text-gray-700"
+                    className="text-center py-2 px-2 font-semibold text-gray-700 dark:text-gray-300"
                   >
                     {player.name}
                   </th>
@@ -40,8 +40,8 @@ export function SKScoreBoard({ game }: SKScoreBoardProps) {
             </thead>
             <tbody>
               {game.rounds.map((round) => (
-                <tr key={round.roundNumber} className="border-b border-gray-100">
-                  <td className="py-2 px-2 text-gray-600">{round.roundNumber}</td>
+                <tr key={round.roundNumber} className="border-b border-gray-100 dark:border-gray-700/50">
+                  <td className="py-2 px-2 text-gray-600 dark:text-gray-400">{round.roundNumber}</td>
                   {game.players.map((player) => {
                     const bid = round.bids[player.id] || 0;
                     const tricks = round.tricks[player.id] || 0;
@@ -50,16 +50,16 @@ export function SKScoreBoard({ game }: SKScoreBoardProps) {
                     return (
                       <td key={player.id} className="text-center py-2 px-2">
                         <div className="flex flex-col">
-                          <span className="text-xs text-gray-500">
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
                             {bid}/{tricks}
                           </span>
                           <span
                             className={`font-medium ${
                               score > 0
-                                ? 'text-green-600'
+                                ? 'text-green-600 dark:text-green-400'
                                 : score < 0
-                                ? 'text-red-600'
-                                : 'text-gray-800'
+                                ? 'text-red-600 dark:text-red-400'
+                                : 'text-gray-800 dark:text-gray-200'
                             }`}
                           >
                             {score > 0 ? '+' : ''}
@@ -71,15 +71,15 @@ export function SKScoreBoard({ game }: SKScoreBoardProps) {
                   })}
                 </tr>
               ))}
-              <tr className="border-t-2 border-gray-300 font-semibold bg-gray-50">
-                <td className="py-3 px-2 text-gray-900">Total</td>
+              <tr className="border-t-2 border-gray-300 dark:border-gray-600 font-semibold bg-gray-50 dark:bg-gray-700/50">
+                <td className="py-3 px-2 text-gray-900 dark:text-white">Total</td>
                 {game.players.map((player) => (
                   <td key={player.id} className="text-center py-3 px-2">
                     <div className="flex items-center justify-center gap-1">
                       {player.id === leaderId && (
-                        <Trophy className="w-4 h-4 text-yellow-500" />
+                        <Trophy className="w-4 h-4 text-yellow-500 dark:text-yellow-400" />
                       )}
-                      <span className="text-gray-900">
+                      <span className="text-gray-900 dark:text-white">
                         {game.totalScores[player.id] || 0}
                       </span>
                     </div>
@@ -91,7 +91,7 @@ export function SKScoreBoard({ game }: SKScoreBoardProps) {
         </div>
 
         {game.rounds.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
+          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
             No rounds played yet. Enter bids and tricks to begin!
           </div>
         )}

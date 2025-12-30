@@ -95,7 +95,7 @@ export function SKScoreInput({ game, onAddRound }: SKScoreInputProps) {
         <CardTitle>
           Round {game.currentRound} - {step === 'bids' ? 'Enter Bids' : step === 'tricks' ? 'Enter Tricks' : 'Enter Bonuses'}
         </CardTitle>
-        <p className="text-sm text-gray-500 mt-1">
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
           {game.currentRound} card{game.currentRound > 1 ? 's' : ''} this round
           {step === 'bids' && ' - How many tricks will you win?'}
           {step === 'tricks' && ' - How many tricks did you actually win?'}
@@ -149,10 +149,10 @@ export function SKScoreInput({ game, onAddRound }: SKScoreInputProps) {
                       <p
                         className={`text-sm mt-1 font-medium ${
                           previewScore > 0
-                            ? 'text-green-600'
+                            ? 'text-green-600 dark:text-green-400'
                             : previewScore < 0
-                            ? 'text-red-600'
-                            : 'text-gray-600'
+                            ? 'text-red-600 dark:text-red-400'
+                            : 'text-gray-600 dark:text-gray-400'
                         }`}
                       >
                         Score: {previewScore > 0 ? '+' : ''}
@@ -202,10 +202,10 @@ export function SKScoreInput({ game, onAddRound }: SKScoreInputProps) {
                       <p
                         className={`text-sm mt-1 font-medium ${
                           previewScore > 0
-                            ? 'text-green-600'
+                            ? 'text-green-600 dark:text-green-400'
                             : previewScore < 0
-                            ? 'text-red-600'
-                            : 'text-gray-600'
+                            ? 'text-red-600 dark:text-red-400'
+                            : 'text-gray-600 dark:text-gray-400'
                         }`}
                       >
                         Final Score: {previewScore > 0 ? '+' : ''}

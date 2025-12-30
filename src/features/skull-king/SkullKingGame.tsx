@@ -28,7 +28,7 @@ export function SkullKingGame() {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
         <div className="text-center">
-          <p className="text-gray-600">Loading game...</p>
+          <p className="text-gray-600 dark:text-gray-300">Loading game...</p>
         </div>
       </div>
     );
@@ -67,20 +67,20 @@ export function SkullKingGame() {
       </div>
 
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Skull King</h1>
-        <p className="text-gray-600 mt-1">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Skull King</h1>
+        <p className="text-gray-600 dark:text-gray-300 mt-1">
           {game.players.length} players • 10 rounds
         </p>
       </div>
 
       {gameComplete && winner && (
-        <Card className="bg-gradient-to-r from-yellow-50 to-yellow-100 border-yellow-300">
+        <Card className="bg-gradient-to-r from-yellow-50 to-yellow-100 dark:from-yellow-900/30 dark:to-yellow-800/30 border-yellow-300 dark:border-yellow-700">
           <CardHeader>
             <div className="flex items-center gap-3">
-              <Trophy className="w-8 h-8 text-yellow-600" />
+              <Trophy className="w-8 h-8 text-yellow-600 dark:text-yellow-400" />
               <div>
-                <CardTitle className="text-yellow-900">Game Complete!</CardTitle>
-                <p className="text-yellow-700 text-sm mt-1">
+                <CardTitle className="text-yellow-900 dark:text-yellow-200">Game Complete!</CardTitle>
+                <p className="text-yellow-700 dark:text-yellow-300 text-sm mt-1">
                   {winner.player.name} wins with {winner.score} points!
                 </p>
               </div>
@@ -124,7 +124,7 @@ export function SkullKingGame() {
                 <CardTitle>All Rounds Complete!</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-600 mb-4">
+                <p className="text-gray-600 dark:text-gray-300 mb-4">
                   All 10 rounds have been played. Check the final scores above!
                 </p>
               </CardContent>
