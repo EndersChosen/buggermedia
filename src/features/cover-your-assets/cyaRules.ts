@@ -4,9 +4,10 @@ export const cyaRules: GameRules = {
   overview:
     'Cover Your Assets is a fast-paced card game where players collect and protect valuable asset pairs. The first player to reach $1,000,000 wins!',
   setup: [
-    'Shuffle the deck and deal 4 cards to each player',
+    'Shuffle the deck and deal 5 cards to each player',
     'Place the remaining cards face down as the draw pile',
-    'Create a discard pile next to the draw pile',
+    'Flip a card from the deck to start the discard pile',
+    'The player to the left of the dealer goes first',
   ],
   gameplay: [
     'On your turn, draw cards until you have 4 in your hand',
@@ -51,11 +52,11 @@ Each asset card displays:
         content: `To set up the game:
 
 1. Shuffle the entire deck thoroughly
-2. Deal 4 cards face-down to each player
+2. Deal 5 cards face-down to each player
 3. Place the remaining cards face-down in the center as the draw pile
-4. Leave space next to the draw pile for a discard pile
+4. Flip the top card of the draw pile to start the discard pile
 5. Each player looks at their hand (keep cards hidden from other players)
-6. Determine who goes first (youngest player, or player who most recently made a purchase)`,
+6. The player to the left of the dealer goes first`,
       },
       {
         id: 'gameplay',
@@ -65,52 +66,117 @@ Each asset card displays:
           {
             id: 'turn-structure',
             title: 'Turn Structure',
-            content: `On your turn, follow these steps in order:
+            content: `On your turn you must take one of the following actions:
 
-1. DRAW: Draw cards from the draw pile until you have 4 cards in your hand
-2. PLAY: You may take ONE of these actions:
-   - Play a matching pair to start a new asset pile
-   - Play a card to steal an opponent's top asset
-   - Play a card to cover one of your own assets
-   - Play an action card (if applicable)
-3. DISCARD: If you cannot or choose not to play, you may discard one card`,
+* Form a set
+* Discard
+* Challenge (attempt to steal)`,
           },
           {
-            id: 'matching-pairs',
-            title: 'Playing Matching Pairs',
-            content: `To start a new asset pile:
+            id: 'forming-sets',
+            title: 'Forming a set',
+            content: `Form a Set of matching pairs to add to your asset pile:':
 
-- Play two matching asset cards from your hand face-up in front of you
-- These cards form the base of an asset pile
-- You can have multiple asset piles at the same time
-- Each pile is kept separate and visible to all players
-- The top card of each pile determines what can steal or cover it`,
+You must form a set in one of three ways:
+• Pairing two identical cards from your hand.
+• Pairing a card from your hand with an
+identical card from the top of the discard pile.
+• Pairing in the above mentioned ways, but with one
+of the two cards being a Wild. Note: You must always
+place a Wild below an Asset when building sets!
+To clarify, a pair can be either two identical Assets,
+or an Asset and a Wild (Silver or Gold). However,
+you may not form a set with two Wilds or with
+more than two cards. It must be a pair. Lastly, sets
+in your stack are never combined with previously
+played sets even if they are the same Asset.
+Stacking your sets:
+To keep sets separated, each time you add
+a new set to your pile you'll place it on
+top of the previous set, alternating
+between horizontal and vertical
+orientation, even if it is the same
+Asset as a previously played set`,
+          },
+          {
+            id: 'discarding',
+            title: 'Discarding Cards',
+            content: `Discard a card from your hand, face up, onto the discard
+pile. There can be a lot of strategy in choosing this action`,
           },
           {
             id: 'stealing',
-            title: 'Stealing Assets',
-            content: `You can steal an opponent's top asset pair if you have a matching card:
+            title: 'Challenge (Attempt to Steal)',
+            content: `The top set in each stack is vulnerable to being taken by
+another player. To challenge another player's top set, place
+an Asset matching that set, or a Wild card, in front of the
+player you are challenging. Note: Assets and Wilds are of
+equal power for stealing, even though they have a different
+value at the end of the game.
+The defender may protect their set by playing a matching
+Asset or Wild from their hand. You may each challenge
+and defend for as long as you want or are able.
+When one player is no longer able to defend, or chooses
+not to, that player loses the challenge. If the challenger
+wins, they take the set. If the defender wins, they keep it.
+Whoever wins also gets to keep all cards that were used
+in the battle. As a reminder, any wilds must be placed
+below Assets.
 
-1. Play a card from your hand that matches the TOP card of an opponent's asset pile
-2. Challenge: The opponent can defend by playing a matching card from their hand
-3. Counter-Challenge: You can challenge back with another matching card
-4. This continues until one player cannot match
-5. The last player to play a matching card takes the entire pile
+Note: You may not draw new cards during a challenge.
 
-IMPORTANT: You can only steal the TOP asset pair, not piles covered by other cards
-IMPORTANT: Only cards played during the challenge count - cards revealed for defense don't add to the pile`,
+Two additional rules apply to challenging:
+• The first (bottom) set formed in each player's
+stack is safe and may not be stolen.
+• You must form at least one set before stealing
+any sets from other players.
+
+Example Challenge: Jarom attempts to take Sarah's Classic Auto set.
+He challenges with a Classic Auto. Sarah responds with Gold
+(Wild). Jarom responds with a Classic Auto. Sarah cannot
+respond and loses. Jarom keeps the three played cards as
+part of his new set.`,
           },
           {
-            id: 'covering',
-            title: 'Covering Your Assets',
-            content: `Protect your assets from being stolen:
-
-- Play a matching card on top of one of your asset piles
-- This "covers" the asset, making it safe from theft
-- Only the TOP card can be stolen or covered
-- You can cover the same pile multiple times for added protection
-- Each cover adds the card's value to that pile's total`,
+            id: 'ending-your-turn',
+            title: 'Ending Your Turn',
+            content: `After completing one of the three possible actions (form a
+set, discard, or challenge), draw back up to five cards from
+the deck. After you've drawn, if another player used cards
+to defend a set during your turn, they draw back up to five
+as well. The player to your left takes their turn next.`,
           },
+                    {
+            id: 'ending-the-round',
+            title: 'Ending the Round',
+            content: `When the draw deck is depleted, play continues until
+everyone has played all of the remaining cards in their
+hand. As always, passing on your turn is not an option. If
+you choose not to form a set or challenge, you must take
+the discard action. `,
+          },
+                    {
+            id: 'scoring',
+            title: 'Scoring',
+            content: `Tally your score at the end of the round by adding up the
+value of each card in your stack. Adding them up in piles
+of $100k each makes this a little easier.`,
+          },
+    {
+            id: 'ending-the-game',
+            title: 'Ending the Game',
+            content: `You can choose the following ways to end a game:
+• Classic Game: Play as many rounds as required for a
+player to pass $1,000,000 total. That player wins!
+• Quick Game: The player with the highest score at the
+end of one round wins. Congratulations!
+• Highest score after 3 rounds: Record scores after
+each round. After 3 rounds, the highest score wins!
+• First to win 2 rounds: Only record which player has
+the highest score at the end of each round. The first
+player to win 2 rounds wins!`,
+          },
+          
           {
             id: 'action-cards',
             title: 'Action Cards',
@@ -163,7 +229,7 @@ VARIANT: For longer games, play "best 2 out of 3" rounds.`,
         id: 'quick-reference',
         title: 'Quick Reference',
         content: `TURN SEQUENCE:
-1. Draw to 4 cards
+1. Draw to 5 cards
 2. Play a pair, steal, cover, or action card (or pass)
 3. Discard if desired
 

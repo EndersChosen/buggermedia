@@ -16,6 +16,7 @@ export function GameSelectionPage() {
   const { activeGames, deleteGame, createGame, loadGame } = useGame();
   const [selectedGame, setSelectedGame] = useState<GameDefinition | null>(null);
   const [playerNames, setPlayerNames] = useState<string[]>(['', '']);
+  const [targetScore, setTargetScore] = useState<string>('1000000');
   const [showPlayerSetup, setShowPlayerSetup] = useState(false);
 
   const games = getAllGames();
@@ -23,6 +24,7 @@ export function GameSelectionPage() {
   const handleGameSelect = (game: GameDefinition) => {
     setSelectedGame(game);
     setPlayerNames(['', '']);
+    setTargetScore('1000000');
     setShowPlayerSetup(true);
   };
 
@@ -54,12 +56,26 @@ export function GameSelectionPage() {
       return;
     }
 
+    // Validate target score for Cover Your Assets
+    if (selectedGame.id === 'cover-your-assets') {
+      const scoreValue = parseInt(targetScore, 10);
+      if (isNaN(scoreValue) || scoreValue <= 0) {
+        alert('Please enter a valid target score greater than 0');
+        return;
+      }
+    }
+
     const players: Player[] = filledNames.map((name, index) => ({
       id: `player-${index}-${Date.now()}`,
       name: name.trim(),
     }));
 
-    const gameId = createGame(selectedGame.id, players);
+    // Pass target score option for Cover Your Assets
+    const options = selectedGame.id === 'cover-your-assets'
+      ? { targetScore: parseInt(targetScore, 10) }
+      : undefined;
+
+    const gameId = createGame(selectedGame.id, players, options);
     setShowPlayerSetup(false);
     navigate(`/game/${selectedGame.id}/${gameId}`);
   };
@@ -179,6 +195,24 @@ export function GameSelectionPage() {
             <Button variant="secondary" onClick={handleAddPlayer} className="w-full">
               Add Player
             </Button>
+          )}
+
+          {/* Target Score for Cover Your Assets */}
+          {selectedGame?.id === 'cover-your-assets' && (
+            <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+              <Input
+                type="number"
+                label="Target Score"
+                placeholder="1000000"
+                value={targetScore}
+                onChange={(e) => setTargetScore(e.target.value)}
+                min="1000"
+                step="1000"
+              />
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                First player to reach this score wins (default: $1,000,000)
+              </p>
+            </div>
           )}
 
           <div className="flex gap-3 pt-4">

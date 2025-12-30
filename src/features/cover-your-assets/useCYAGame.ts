@@ -12,13 +12,14 @@ export function useCYAGame(gameId: string) {
     }
   }, [currentGame, gameId]);
 
-  const addRound = (scores: Record<string, number>) => {
+  const addRound = (scores: Record<string, number>, cardCollections?: Record<string, Record<string, number>>) => {
     if (!game) return;
 
     const roundNumber = game.rounds.length + 1;
     const newRound: CYARound = {
       roundNumber,
       scores,
+      cardCollections,
     };
 
     const newTotalScores = { ...game.totalScores };
@@ -32,11 +33,11 @@ export function useCYAGame(gameId: string) {
     });
   };
 
-  const updateRound = (roundNumber: number, scores: Record<string, number>) => {
+  const updateRound = (roundNumber: number, scores: Record<string, number>, cardCollections?: Record<string, Record<string, number>>) => {
     if (!game) return;
 
     const updatedRounds = game.rounds.map((round) =>
-      round.roundNumber === roundNumber ? { ...round, scores } : round
+      round.roundNumber === roundNumber ? { ...round, scores, cardCollections } : round
     );
 
     // Recalculate totals

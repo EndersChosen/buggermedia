@@ -4,11 +4,12 @@ import { useCYAGame } from './useCYAGame';
 import { useGame } from '@/context/GameContext';
 import { CYAScoreBoard } from './components/CYAScoreBoard';
 import { CYAScoreInput } from './components/CYAScoreInput';
+import { CYAScoreCalculator } from './components/CYAScoreCalculator';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { EnhancedRulesModal } from '@/features/rules/components/EnhancedRulesModal';
 import { cyaRules } from './cyaRules';
-import { ArrowLeft, Trophy, Home, BookOpen } from 'lucide-react';
+import { ArrowLeft, Trophy, Home, BookOpen, Calculator } from 'lucide-react';
 
 export function CoverYourAssetsGame() {
   const { gameId } = useParams<{ gameId: string }>();
@@ -16,6 +17,7 @@ export function CoverYourAssetsGame() {
   const { loadGame } = useGame();
   const { game, addRound, checkWinCondition, getWinner, endGame } = useCYAGame(gameId!);
   const [showRules, setShowRules] = useState(false);
+  const [showCalculator, setShowCalculator] = useState(false);
 
   useEffect(() => {
     if (gameId) {
@@ -54,6 +56,10 @@ export function CoverYourAssetsGame() {
           Back to Games
         </Button>
         <div className="flex gap-2">
+          <Button variant="secondary" onClick={() => setShowCalculator(true)} size="sm">
+            <Calculator className="w-4 h-4 mr-2" />
+            Calculator
+          </Button>
           <Button variant="secondary" onClick={() => setShowRules(true)} size="sm">
             <BookOpen className="w-4 h-4 mr-2" />
             View Rules
@@ -113,6 +119,11 @@ export function CoverYourAssetsGame() {
         onClose={() => setShowRules(false)}
         gameName="Cover Your Assets"
         rules={cyaRules}
+      />
+
+      <CYAScoreCalculator
+        isOpen={showCalculator}
+        onClose={() => setShowCalculator(false)}
       />
     </div>
   );

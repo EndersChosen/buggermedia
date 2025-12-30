@@ -19,7 +19,8 @@ export interface BaseGameSession {
 // Cover Your Assets specific
 export interface CYARound {
   roundNumber: number;
-  scores: Record<string, number>; // playerId -> score for this round
+  scores: Record<string, number>; // playerId -> score for this round (auto-calculated from cardCollections)
+  cardCollections?: Record<string, Record<string, number>>; // playerId -> cardName -> quantity
 }
 
 export type CYAGameMode = 'classic' | 'quick' | 'bestOf3';

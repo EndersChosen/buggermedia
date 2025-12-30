@@ -1,73 +1,83 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { CYAGameSession } from '@/@types/game.types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { PlusCircle } from 'lucide-react';
+import { CYAPlayerCardInput } from './CYAPlayerCardInput';
+import { ASSET_CARDS, WILD_CARDS, ADVANCED_WILD_CARDS } from '../cyaCardTypes';
 
 interface CYAScoreInputProps {
   game: CYAGameSession;
-  onAddRound: (scores: Record<string, number>) => void;
+  onAddRound: (scores: Record<string, number>, cardCollections?: Record<string, Record<string, number>>) => void;
 }
 
 export function CYAScoreInput({ game, onAddRound }: CYAScoreInputProps) {
-  const [scores, setScores] = useState<Record<string, string>>(
-    Object.fromEntries(game.players.map((p) => [p.id, '']))
+  const [cardCollections, setCardCollections] = useState<Record<string, Record<string, number>>>(
+    Object.fromEntries(game.players.map((p) => [p.id, {}]))
   );
 
-  const handleScoreChange = (playerId: string, value: string) => {
-    // Allow only numbers and empty string
-    if (value === '' || /^\d+$/.test(value)) {
-      setScores({ ...scores, [playerId]: value });
-    }
+  const handleCardCountsChange = (playerId: string, cardCounts: Record<string, number>) => {
+    setCardCollections({
+      ...cardCollections,
+      [playerId]: cardCounts,
+    });
   };
 
-  const handleSubmit = () => {
-    const numericScores: Record<string, number> = {};
-    let isValid = true;
+  const calculateScore = (cardCounts: Record<string, number>): number => {
+    return Object.entries(cardCounts).reduce((sum, [cardName, count]) => {
+      const card = [...ASSET_CARDS, ...WILD_CARDS, ...ADVANCED_WILD_CARDS].find(
+        c => c.name === cardName
+      );
+      return sum + (card ? card.value * count : 0);
+    }, 0);
+  };
 
+  const scores = useMemo(() => {
+    const result: Record<string, number> = {};
     game.players.forEach((player) => {
-      const value = scores[player.id];
-      if (value === '') {
-        isValid = false;
-        return;
-      }
-      numericScores[player.id] = parseInt(value, 10);
+      result[player.id] = calculateScore(cardCollections[player.id] || {});
+    });
+    return result;
+  }, [cardCollections, game.players]);
+
+  const handleSubmit = () => {
+    const hasAnyCards = game.players.some((player) => {
+      const cards = cardCollections[player.id];
+      return cards && Object.keys(cards).length > 0;
     });
 
-    if (!isValid) {
-      alert('Please enter scores for all players');
+    if (!hasAnyCards) {
+      alert('Please enter cards for at least one player');
       return;
     }
 
-    onAddRound(numericScores);
+    onAddRound(scores, cardCollections);
 
-    // Reset scores
-    setScores(Object.fromEntries(game.players.map((p) => [p.id, ''])));
+    // Reset card collections
+    setCardCollections(Object.fromEntries(game.players.map((p) => [p.id, {}])));
   };
 
-  const isFormValid = game.players.every((player) => scores[player.id] !== '');
+  const isFormValid = game.players.some((player) => {
+    const cards = cardCollections[player.id];
+    return cards && Object.keys(cards).length > 0;
+  });
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Add Round Scores</CardTitle>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Round {game.rounds.length + 1}
+          Round {game.rounds.length + 1} • Enter cards collected by each player
         </p>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
           {game.players.map((player) => (
-            <Input
+            <CYAPlayerCardInput
               key={player.id}
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              label={player.name}
-              placeholder="Enter score"
-              value={scores[player.id]}
-              onChange={(e) => handleScoreChange(player.id, e.target.value)}
+              playerName={player.name}
+              cardCounts={cardCollections[player.id] || {}}
+              onCardCountsChange={(cardCounts) => handleCardCountsChange(player.id, cardCounts)}
             />
           ))}
 
