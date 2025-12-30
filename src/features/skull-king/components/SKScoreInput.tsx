@@ -91,8 +91,8 @@ export function SKScoreInput({ game, onAddRound, editingRound, onUpdateRound, on
   };
 
   const handleBonusChange = (playerId: string, value: number, details: SKBonusDetails) => {
-    setBonuses({ ...bonuses, [playerId]: value });
-    setBonusDetails({ ...bonusDetails, [playerId]: details });
+    setBonuses(prev => ({ ...prev, [playerId]: value }));
+    setBonusDetails(prev => ({ ...prev, [playerId]: details }));
   };
 
   const handleNextStep = () => {

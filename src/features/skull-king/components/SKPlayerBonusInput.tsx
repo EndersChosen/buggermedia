@@ -68,7 +68,8 @@ export function SKPlayerBonusInput({
 
   useEffect(() => {
     onBonusChange(calculateTotal(bonuses), bonuses);
-  }, [bonuses, onBonusChange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bonuses]);
 
   const handleCheckboxChange = (field: keyof BonusState) => {
     setBonuses({ ...bonuses, [field]: !bonuses[field as keyof BonusState] });
