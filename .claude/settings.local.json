@@ -8,7 +8,10 @@
       "Bash(npx tailwindcss:*)",
       "Bash(npm run build:*)",
       "Bash(npm uninstall:*)",
-      "Bash(npm run dev:*)"
+      "Bash(npm run dev:*)",
+      "Bash(wc:*)",
+      "Bash(cat:*)",
+      "Bash(find:*)"
     ]
   }
 }
