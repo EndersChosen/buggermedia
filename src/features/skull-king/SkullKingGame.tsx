@@ -10,13 +10,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { EnhancedRulesModal } from '@/features/rules/components/EnhancedRulesModal';
 import { skRules } from './skRules';
 import { ArrowLeft, Trophy, Home, BookOpen } from 'lucide-react';
+import { SKRound } from '@/@types/game.types';
 
 export function SkullKingGame() {
   const { gameId } = useParams<{ gameId: string }>();
   const navigate = useNavigate();
   const { loadGame } = useGame();
-  const { game, addRound, isGameComplete, getWinner, endGame } = useSKGame(gameId!);
+  const { game, addRound, updateRound, isGameComplete, getWinner, endGame } = useSKGame(gameId!);
   const [showRules, setShowRules] = useState(false);
+  const [editingRound, setEditingRound] = useState<SKRound | null>(null);
 
   useEffect(() => {
     if (gameId) {
@@ -46,6 +48,28 @@ export function SkullKingGame() {
 
   const handleBackHome = () => {
     navigate('/');
+  };
+
+  const handleEditRound = (roundNumber: number) => {
+    if (!game) return;
+    const round = game.rounds.find((r) => r.roundNumber === roundNumber);
+    if (round) {
+      setEditingRound(round);
+    }
+  };
+
+  const handleUpdateRound = (
+    roundNumber: number,
+    bids: Record<string, number>,
+    tricks: Record<string, number>,
+    bonuses: Record<string, number>
+  ) => {
+    updateRound(roundNumber, bids, tricks, bonuses);
+    setEditingRound(null);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingRound(null);
   };
 
   return (
@@ -114,10 +138,18 @@ export function SkullKingGame() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <SKScoreBoard game={game} />
+          <SKScoreBoard game={game} onEditRound={handleEditRound} />
         </div>
         <div>
-          {!gameComplete && <SKScoreInput game={game} onAddRound={addRound} />}
+          {!gameComplete && (
+            <SKScoreInput
+              game={game}
+              onAddRound={addRound}
+              editingRound={editingRound}
+              onUpdateRound={handleUpdateRound}
+              onCancelEdit={handleCancelEdit}
+            />
+          )}
           {gameComplete && (
             <Card>
               <CardHeader>

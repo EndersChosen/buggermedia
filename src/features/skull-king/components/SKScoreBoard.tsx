@@ -1,12 +1,14 @@
 import { SKGameSession } from '@/@types/game.types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { Trophy } from 'lucide-react';
+import { Trophy, Edit2 } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
 
 interface SKScoreBoardProps {
   game: SKGameSession;
+  onEditRound?: (roundNumber: number) => void;
 }
 
-export function SKScoreBoard({ game }: SKScoreBoardProps) {
+export function SKScoreBoard({ game, onEditRound }: SKScoreBoardProps) {
   const getLeaderId = () => {
     const maxScore = Math.max(...Object.values(game.totalScores));
     return Object.entries(game.totalScores).find(([_, score]) => score === maxScore)?.[0];
@@ -36,6 +38,7 @@ export function SKScoreBoard({ game }: SKScoreBoardProps) {
                     {player.name}
                   </th>
                 ))}
+                {onEditRound && <th className="w-12"></th>}
               </tr>
             </thead>
             <tbody>
@@ -69,6 +72,18 @@ export function SKScoreBoard({ game }: SKScoreBoardProps) {
                       </td>
                     );
                   })}
+                  {onEditRound && (
+                    <td className="py-2 px-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onEditRound(round.roundNumber)}
+                        className="h-8 w-8 p-0"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </Button>
+                    </td>
+                  )}
                 </tr>
               ))}
               <tr className="border-t-2 border-gray-300 dark:border-gray-600 font-semibold bg-gray-50 dark:bg-gray-700/50">
@@ -85,6 +100,7 @@ export function SKScoreBoard({ game }: SKScoreBoardProps) {
                     </div>
                   </td>
                 ))}
+                {onEditRound && <td></td>}
               </tr>
             </tbody>
           </table>
