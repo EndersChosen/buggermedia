@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { EnhancedRulesModal } from '@/features/rules/components/EnhancedRulesModal';
 import { skRules } from './skRules';
 import { ArrowLeft, Trophy, Home, BookOpen } from 'lucide-react';
-import { SKRound } from '@/@types/game.types';
+import { SKRound, SKBonusDetails } from '@/@types/game.types';
 
 export function SkullKingGame() {
   const { gameId } = useParams<{ gameId: string }>();
@@ -62,9 +62,10 @@ export function SkullKingGame() {
     roundNumber: number,
     bids: Record<string, number>,
     tricks: Record<string, number>,
-    bonuses: Record<string, number>
+    bonuses: Record<string, number>,
+    bonusDetails: Record<string, SKBonusDetails>
   ) => {
-    updateRound(roundNumber, bids, tricks, bonuses);
+    updateRound(roundNumber, bids, tricks, bonuses, bonusDetails);
     setEditingRound(null);
   };
 

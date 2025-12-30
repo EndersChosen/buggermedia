@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { SKGameSession, SKRound } from '@/@types/game.types';
+import { SKGameSession, SKRound, SKBonusDetails } from '@/@types/game.types';
 import { useGame } from '@/context/GameContext';
 import { calculateSKRoundScore } from './skCalculations';
 
@@ -16,7 +16,8 @@ export function useSKGame(gameId: string) {
   const addRound = (
     bids: Record<string, number>,
     tricks: Record<string, number>,
-    bonuses: Record<string, number>
+    bonuses: Record<string, number>,
+    bonusDetails: Record<string, SKBonusDetails>
   ) => {
     if (!game) return;
 
@@ -38,6 +39,7 @@ export function useSKGame(gameId: string) {
       bids,
       tricks,
       bonuses,
+      bonusDetails,
       scores,
     };
 
@@ -59,7 +61,8 @@ export function useSKGame(gameId: string) {
     roundNumber: number,
     bids: Record<string, number>,
     tricks: Record<string, number>,
-    bonuses: Record<string, number>
+    bonuses: Record<string, number>,
+    bonusDetails: Record<string, SKBonusDetails>
   ) => {
     if (!game) return;
 
@@ -76,7 +79,7 @@ export function useSKGame(gameId: string) {
 
     const updatedRounds = game.rounds.map((round) =>
       round.roundNumber === roundNumber
-        ? { ...round, bids, tricks, bonuses, scores }
+        ? { ...round, bids, tricks, bonuses, bonusDetails, scores }
         : round
     );
 

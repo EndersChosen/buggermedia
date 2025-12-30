@@ -34,11 +34,22 @@ export interface CYAGameSession extends BaseGameSession {
 }
 
 // Skull King specific
+export interface SKBonusDetails {
+  yellow14: boolean;
+  purple14: boolean;
+  green14: boolean;
+  black14: boolean;
+  mermaidsCapturedByPirates: number;
+  piratesCapturedBySkullKing: number;
+  skullKingCapturedByMermaid: boolean;
+}
+
 export interface SKRound {
   roundNumber: number; // 1-10
   bids: Record<string, number>; // playerId -> bid
   tricks: Record<string, number>; // playerId -> tricks won
-  bonuses: Record<string, number>; // playerId -> bonus points
+  bonuses: Record<string, number>; // playerId -> bonus points total
+  bonusDetails?: Record<string, SKBonusDetails>; // playerId -> detailed bonus breakdown
   scores: Record<string, number>; // playerId -> score for this round
 }
 

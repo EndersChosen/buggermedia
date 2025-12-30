@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { SKBonusDetails } from '@/@types/game.types';
 
 interface BonusState {
   yellow14: boolean;
@@ -14,7 +15,8 @@ interface SKPlayerBonusInputProps {
   playerName: string;
   bid: string;
   tricks: string;
-  onBonusChange: (totalBonus: number) => void;
+  onBonusChange: (totalBonus: number, bonusDetails: SKBonusDetails) => void;
+  initialBonusDetails?: SKBonusDetails;
 }
 
 export function SKPlayerBonusInput({
@@ -22,8 +24,9 @@ export function SKPlayerBonusInput({
   bid,
   tricks,
   onBonusChange,
+  initialBonusDetails,
 }: SKPlayerBonusInputProps) {
-  const [bonuses, setBonuses] = useState<BonusState>({
+  const [bonuses, setBonuses] = useState<BonusState>(initialBonusDetails || {
     yellow14: false,
     purple14: false,
     green14: false,
@@ -45,8 +48,26 @@ export function SKPlayerBonusInput({
     return total;
   };
 
+  // Update bonuses when initial values change (e.g., when editing a different round)
   useEffect(() => {
-    onBonusChange(calculateTotal(bonuses));
+    if (initialBonusDetails) {
+      setBonuses(initialBonusDetails);
+    } else {
+      // Reset to defaults when starting a new round
+      setBonuses({
+        yellow14: false,
+        purple14: false,
+        green14: false,
+        black14: false,
+        mermaidsCapturedByPirates: 0,
+        piratesCapturedBySkullKing: 0,
+        skullKingCapturedByMermaid: false,
+      });
+    }
+  }, [initialBonusDetails]);
+
+  useEffect(() => {
+    onBonusChange(calculateTotal(bonuses), bonuses);
   }, [bonuses, onBonusChange]);
 
   const handleCheckboxChange = (field: keyof BonusState) => {

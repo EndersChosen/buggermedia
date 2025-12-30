@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { SKGameSession, SKRound } from '@/@types/game.types';
+import { SKGameSession, SKRound, SKBonusDetails } from '@/@types/game.types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
@@ -12,14 +12,16 @@ interface SKScoreInputProps {
   onAddRound: (
     bids: Record<string, number>,
     tricks: Record<string, number>,
-    bonuses: Record<string, number>
+    bonuses: Record<string, number>,
+    bonusDetails: Record<string, SKBonusDetails>
   ) => void;
   editingRound?: SKRound | null;
   onUpdateRound?: (
     roundNumber: number,
     bids: Record<string, number>,
     tricks: Record<string, number>,
-    bonuses: Record<string, number>
+    bonuses: Record<string, number>,
+    bonusDetails: Record<string, SKBonusDetails>
   ) => void;
   onCancelEdit?: () => void;
 }
@@ -37,6 +39,17 @@ export function SKScoreInput({ game, onAddRound, editingRound, onUpdateRound, on
   const [bonuses, setBonuses] = useState<Record<string, number>>(
     Object.fromEntries(game.players.map((p) => [p.id, 0]))
   );
+  const [bonusDetails, setBonusDetails] = useState<Record<string, SKBonusDetails>>(
+    Object.fromEntries(game.players.map((p) => [p.id, {
+      yellow14: false,
+      purple14: false,
+      green14: false,
+      black14: false,
+      mermaidsCapturedByPirates: 0,
+      piratesCapturedBySkullKing: 0,
+      skullKingCapturedByMermaid: false,
+    }]))
+  );
 
   // Pre-fill data when editing
   useEffect(() => {
@@ -49,6 +62,17 @@ export function SKScoreInput({ game, onAddRound, editingRound, onUpdateRound, on
       ));
       setBonuses(Object.fromEntries(
         game.players.map((p) => [p.id, editingRound.bonuses[p.id] || 0])
+      ));
+      setBonusDetails(Object.fromEntries(
+        game.players.map((p) => [p.id, editingRound.bonusDetails?.[p.id] || {
+          yellow14: false,
+          purple14: false,
+          green14: false,
+          black14: false,
+          mermaidsCapturedByPirates: 0,
+          piratesCapturedBySkullKing: 0,
+          skullKingCapturedByMermaid: false,
+        }])
       ));
       setStep('bids');
     }
@@ -66,8 +90,9 @@ export function SKScoreInput({ game, onAddRound, editingRound, onUpdateRound, on
     }
   };
 
-  const handleBonusChange = (playerId: string, value: number) => {
+  const handleBonusChange = (playerId: string, value: number, details: SKBonusDetails) => {
     setBonuses({ ...bonuses, [playerId]: value });
+    setBonusDetails({ ...bonusDetails, [playerId]: details });
   };
 
   const handleNextStep = () => {
@@ -89,10 +114,10 @@ export function SKScoreInput({ game, onAddRound, editingRound, onUpdateRound, on
 
     if (editingRound && onUpdateRound) {
       // Update existing round
-      onUpdateRound(editingRound.roundNumber, numericBids, numericTricks, bonuses);
+      onUpdateRound(editingRound.roundNumber, numericBids, numericTricks, bonuses, bonusDetails);
     } else {
       // Add new round
-      onAddRound(numericBids, numericTricks, bonuses);
+      onAddRound(numericBids, numericTricks, bonuses, bonusDetails);
     }
 
     // Reset
@@ -100,6 +125,15 @@ export function SKScoreInput({ game, onAddRound, editingRound, onUpdateRound, on
     setBids(Object.fromEntries(game.players.map((p) => [p.id, ''])));
     setTricks(Object.fromEntries(game.players.map((p) => [p.id, ''])));
     setBonuses(Object.fromEntries(game.players.map((p) => [p.id, 0])));
+    setBonusDetails(Object.fromEntries(game.players.map((p) => [p.id, {
+      yellow14: false,
+      purple14: false,
+      green14: false,
+      black14: false,
+      mermaidsCapturedByPirates: 0,
+      piratesCapturedBySkullKing: 0,
+      skullKingCapturedByMermaid: false,
+    }])));
   };
 
   const isBidsValid = game.players.every((player) => bids[player.id] !== '');
@@ -220,7 +254,8 @@ export function SKScoreInput({ game, onAddRound, editingRound, onUpdateRound, on
                         playerName={player.name}
                         bid={bids[player.id]}
                         tricks={tricks[player.id]}
-                        onBonusChange={(bonus) => handleBonusChange(player.id, bonus)}
+                        onBonusChange={(bonus, details) => handleBonusChange(player.id, bonus, details)}
+                        initialBonusDetails={editingRound ? bonusDetails[player.id] : undefined}
                       />
                       {previewScore !== null && (
                         <p
