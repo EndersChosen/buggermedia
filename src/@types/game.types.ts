@@ -61,12 +61,23 @@ export interface GameDefinition {
   rules: GameRules;
 }
 
+export interface RuleSection {
+  id: string;
+  title: string;
+  content: string;
+  subsections?: RuleSection[];
+}
+
 export interface GameRules {
   overview: string;
   setup: string[];
   gameplay: string[];
   scoring: string[];
   winning: string;
+  // Enhanced rules with full content
+  fullRules?: {
+    sections: RuleSection[];
+  };
 }
 
 // LocalStorage schema

@@ -7,7 +7,7 @@ import { SKScoreInput } from './components/SKScoreInput';
 import { SKRoundTracker } from './components/SKRoundTracker';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { RulesModal } from '@/features/rules/components/RulesModal';
+import { EnhancedRulesModal } from '@/features/rules/components/EnhancedRulesModal';
 import { skRules } from './skRules';
 import { ArrowLeft, Trophy, Home, BookOpen } from 'lucide-react';
 
@@ -133,7 +133,7 @@ export function SkullKingGame() {
         </div>
       </div>
 
-      <RulesModal
+      <EnhancedRulesModal
         isOpen={showRules}
         onClose={() => setShowRules(false)}
         gameName="Skull King"
