@@ -36,7 +36,8 @@ export async function POST(request: Request) {
         .returning();
 
       // Trigger AI processing asynchronously (fire-and-forget)
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      const url = new URL(request.url);
+      const appUrl = `${url.protocol}//${url.host}`;
       fetch(`${appUrl}/api/ai/process`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -98,7 +99,8 @@ export async function POST(request: Request) {
         .returning();
 
       // Trigger AI processing asynchronously (fire-and-forget)
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      const url = new URL(request.url);
+      const appUrl = `${url.protocol}//${url.host}`;
       fetch(`${appUrl}/api/ai/process`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
