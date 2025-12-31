@@ -52,9 +52,9 @@ export function DynamicScoreInput({
   useEffect(() => {
     try {
       const result = calculateRoundScores(definition, {
-        roundNumber: currentRound,
+        currentRound: currentRound,
         playerIds: players.map((p) => p.id),
-        currentRoundData: roundData,
+        roundData: roundData,
         totalScores,
         allRounds: [],
       });
@@ -100,9 +100,9 @@ export function DynamicScoreInput({
   const handleSubmit = () => {
     // Validate round data
     const validation = validateRoundData(definition, roundData, {
-      roundNumber: currentRound,
+      currentRound: currentRound,
       playerIds: players.map((p) => p.id),
-      currentRoundData: roundData,
+      roundData: roundData,
       totalScores,
       allRounds: [],
     });

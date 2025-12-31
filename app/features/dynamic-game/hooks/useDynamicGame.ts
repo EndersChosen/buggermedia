@@ -100,9 +100,9 @@ export function useDynamicGame(gameId: string, gameSlug: string, definition: Dyn
 
       // Check win condition
       const winCheck = checkWinCondition(definition, {
-        roundNumber: nextRound,
+        currentRound: nextRound,
         playerIds: game.players.map((p) => p.id),
-        currentRoundData: {},
+        roundData: {},
         totalScores: updatedTotalScores,
         allRounds: updatedRounds,
       });
