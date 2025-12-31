@@ -59,7 +59,7 @@ export function GameSelectionPage() {
     setPlayerNames(newNames);
   };
 
-  const handleStartGame = () => {
+  const handleStartGame = async () => {
     if (!selectedGame) return;
 
     const filledNames = playerNames.filter((name) => name.trim() !== '');
@@ -83,10 +83,28 @@ export function GameSelectionPage() {
       name: name.trim(),
     }));
 
-    // Pass target score option for Cover Your Assets
-    const options = selectedGame.id === 'cover-your-assets'
-      ? { targetScore: parseInt(targetScore, 10) }
-      : undefined;
+    let options: any = undefined;
+
+    // For Cover Your Assets, pass target score
+    if (selectedGame.id === 'cover-your-assets') {
+      options = { targetScore: parseInt(targetScore, 10) };
+    }
+    // For AI-generated games, fetch the full definition
+    else if ((selectedGame as any).source === 'ai-generated') {
+      try {
+        const response = await fetch(`/api/games/${selectedGame.id}/definition`);
+        if (!response.ok) {
+          alert('Failed to load game definition. Please try again.');
+          return;
+        }
+        const data = await response.json();
+        options = { dynamicDefinition: data.definition };
+      } catch (error) {
+        console.error('Error fetching game definition:', error);
+        alert('Failed to load game definition. Please try again.');
+        return;
+      }
+    }
 
     const gameId = createGame(selectedGame.id, players, options);
     setShowPlayerSetup(false);

@@ -10,6 +10,7 @@ import {
   CYAGameMode,
   STORAGE_KEYS,
 } from '@/types/game.types';
+import { DynamicGameSession, DynamicGameDefinition } from '@/lib/types/dynamic-game.types';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 interface GameContextValue {
@@ -34,6 +35,7 @@ interface GameContextValue {
 interface CreateGameOptions {
   targetScore?: number;
   gameMode?: CYAGameMode;
+  dynamicDefinition?: DynamicGameDefinition;
 }
 
 const GameContext = createContext<GameContextValue | undefined>(undefined);
@@ -86,7 +88,27 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           currentRound: 1,
         } as SKGameSession;
       } else {
-        throw new Error(`Unknown game type: ${gameType}`);
+        // Dynamic AI-generated game
+        if (!options?.dynamicDefinition) {
+          throw new Error(`Dynamic game type "${gameType}" requires a dynamicDefinition in options`);
+        }
+
+        const now = new Date();
+        newGame = {
+          id: gameId,
+          gameType,
+          players,
+          currentRound: 1,
+          rounds: [],
+          totalScores: Object.fromEntries(players.map((p) => [p.id, 0])),
+          dynamicDefinition: options.dynamicDefinition,
+          status: 'setup',
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString(),
+          lastModified: now,
+          startTime: now,
+          isComplete: false,
+        } as DynamicGameSession;
       }
 
       setActiveGames((prev) => [...prev, newGame]);

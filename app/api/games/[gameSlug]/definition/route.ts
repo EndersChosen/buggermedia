@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { aiGeneratedGames, gameDefinitions, gameRules } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, desc } from 'drizzle-orm';
 
 export async function GET(
   request: Request,
@@ -26,12 +26,12 @@ export async function GET(
 
     const game = games[0];
 
-    // Get the game definition
+    // Get the game definition (latest version)
     const definitions = await db
       .select()
       .from(gameDefinitions)
       .where(eq(gameDefinitions.gameId, game.id))
-      .orderBy(gameDefinitions.version)
+      .orderBy(desc(gameDefinitions.version))
       .limit(1);
 
     // Get the game rules
