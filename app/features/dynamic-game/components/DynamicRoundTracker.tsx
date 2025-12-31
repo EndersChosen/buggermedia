@@ -21,7 +21,7 @@ export function DynamicRoundTracker({
   let roundsLabel = '';
 
   if (rounds.type === 'fixed') {
-    totalRounds = rounds.count;
+    totalRounds = rounds.count ?? null;
     roundsLabel = `Round ${currentRound} of ${totalRounds}`;
   } else {
     roundsLabel = `Round ${currentRound}`;
