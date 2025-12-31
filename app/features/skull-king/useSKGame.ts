@@ -31,6 +31,9 @@ export function useSKGame(gameId: string) {
       lootBonuses[player.id] = 0;
     });
 
+    // Track processed alliances to prevent double-counting
+    const processedPairs = new Set<string>();
+
     // Check all alliances and award bonuses to BOTH players if both made their bids
     game.players.forEach((player) => {
       const playerDetails = bonusDetails[player.id];
@@ -41,6 +44,15 @@ export function useSKGame(gameId: string) {
         if (playerMadeBid) {
           // Check each alliance
           playerDetails.lootAlliances.forEach((alliedPlayerId) => {
+            // Create a unique key for this pair (sorted to avoid duplicates)
+            const pairKey = [player.id, alliedPlayerId].sort().join('-');
+
+            // Skip if we've already processed this pair
+            if (processedPairs.has(pairKey)) {
+              return;
+            }
+            processedPairs.add(pairKey);
+
             const alliedPlayerMadeBid = bids[alliedPlayerId] === tricks[alliedPlayerId];
             if (alliedPlayerMadeBid) {
               // Both players made their bid, award 20 points to BOTH players
@@ -101,6 +113,9 @@ export function useSKGame(gameId: string) {
       lootBonuses[player.id] = 0;
     });
 
+    // Track processed alliances to prevent double-counting
+    const processedPairs = new Set<string>();
+
     // Check all alliances and award bonuses to BOTH players if both made their bids
     game.players.forEach((player) => {
       const playerDetails = bonusDetails[player.id];
@@ -111,6 +126,15 @@ export function useSKGame(gameId: string) {
         if (playerMadeBid) {
           // Check each alliance
           playerDetails.lootAlliances.forEach((alliedPlayerId) => {
+            // Create a unique key for this pair (sorted to avoid duplicates)
+            const pairKey = [player.id, alliedPlayerId].sort().join('-');
+
+            // Skip if we've already processed this pair
+            if (processedPairs.has(pairKey)) {
+              return;
+            }
+            processedPairs.add(pairKey);
+
             const alliedPlayerMadeBid = bids[alliedPlayerId] === tricks[alliedPlayerId];
             if (alliedPlayerMadeBid) {
               // Both players made their bid, award 20 points to BOTH players

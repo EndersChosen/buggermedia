@@ -125,7 +125,54 @@ export function SKScoreInput({ game, onAddRound, editingRound, onUpdateRound, on
 
   const handleBonusChange = (playerId: string, value: number, details: SKBonusDetails) => {
     setBonuses(prev => ({ ...prev, [playerId]: value }));
-    setBonusDetails(prev => ({ ...prev, [playerId]: details }));
+
+    // Sync loot alliances bidirectionally
+    setBonusDetails(prev => {
+      const updated = { ...prev, [playerId]: details };
+
+      // Get the current player's alliances
+      const currentAlliances = details.lootAlliances || [];
+
+      // For each player, update their alliances to sync with this player
+      game.players.forEach(player => {
+        if (player.id === playerId) return; // Skip the current player
+
+        const otherPlayerDetails = updated[player.id] || {
+          yellow14: false,
+          purple14: false,
+          green14: false,
+          black14: false,
+          mermaidsCapturedByPirates: 0,
+          piratesCapturedBySkullKing: 0,
+          skullKingCapturedByMermaid: false,
+          lootAlliances: [],
+        };
+
+        const otherPlayerAlliances = otherPlayerDetails.lootAlliances || [];
+
+        // If current player has this other player in their alliances
+        if (currentAlliances.includes(player.id)) {
+          // Make sure the other player also has current player in their alliances
+          if (!otherPlayerAlliances.includes(playerId)) {
+            updated[player.id] = {
+              ...otherPlayerDetails,
+              lootAlliances: [...otherPlayerAlliances, playerId],
+            };
+          }
+        } else {
+          // If current player doesn't have this other player in their alliances
+          // Remove current player from other player's alliances
+          if (otherPlayerAlliances.includes(playerId)) {
+            updated[player.id] = {
+              ...otherPlayerDetails,
+              lootAlliances: otherPlayerAlliances.filter(id => id !== playerId),
+            };
+          }
+        }
+      });
+
+      return updated;
+    });
   };
 
   const togglePlayerExpanded = (playerId: string) => {
