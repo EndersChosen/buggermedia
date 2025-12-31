@@ -122,8 +122,8 @@ export function DynamicScoreInput({
     // Submit the round
     onSubmit({
       roundNumber: currentRound,
-      data: roundData,
-      scores: previewScores,
+      fields: roundData,
+      roundScores: previewScores,
       timestamp: new Date().toISOString(),
     });
   };

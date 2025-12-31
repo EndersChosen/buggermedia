@@ -96,7 +96,7 @@ export function DynamicScoreBoard({
 
                   {/* Round Scores */}
                   {rounds.map((round) => {
-                    const roundScore = round.scores[player.id] ?? 0;
+                    const roundScore = round.roundScores?.[player.id] ?? 0;
                     return (
                       <td
                         key={round.roundNumber}

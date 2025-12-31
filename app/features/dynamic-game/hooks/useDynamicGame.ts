@@ -12,6 +12,7 @@ export function useDynamicGame(gameId: string, gameSlug: string, definition: Dyn
   // Initialize game if not exists
   useEffect(() => {
     if (!game && definition) {
+      const now = new Date();
       const initialGame: DynamicGameSession = {
         id: gameId,
         gameType: gameSlug,
@@ -21,7 +22,9 @@ export function useDynamicGame(gameId: string, gameSlug: string, definition: Dyn
         totalScores: {},
         dynamicDefinition: definition,
         status: 'setup',
-        createdAt: new Date().toISOString(),
+        createdAt: now.toISOString(),
+        updatedAt: now.toISOString(),
+        lastModified: now,
       };
       setGame(initialGame);
     }
@@ -36,6 +39,7 @@ export function useDynamicGame(gameId: string, gameSlug: string, definition: Dyn
         name: name.trim(),
       };
 
+      const now = new Date();
       setGame({
         ...game,
         players: [...game.players, newPlayer],
@@ -43,6 +47,8 @@ export function useDynamicGame(gameId: string, gameSlug: string, definition: Dyn
           ...game.totalScores,
           [newPlayer.id]: 0,
         },
+        updatedAt: now.toISOString(),
+        lastModified: now,
       });
     },
     [game, setGame]
@@ -52,9 +58,12 @@ export function useDynamicGame(gameId: string, gameSlug: string, definition: Dyn
     (playerId: string) => {
       if (!game) return;
 
+      const now = new Date();
       setGame({
         ...game,
         players: game.players.filter((p) => p.id !== playerId),
+        updatedAt: now.toISOString(),
+        lastModified: now,
       });
     },
     [game, setGame]
@@ -63,10 +72,13 @@ export function useDynamicGame(gameId: string, gameSlug: string, definition: Dyn
   const startGame = useCallback(() => {
     if (!game || game.players.length < (definition.metadata.minPlayers ?? 2)) return;
 
+    const now = new Date();
     setGame({
       ...game,
       status: 'in-progress',
       currentRound: 1,
+      updatedAt: now.toISOString(),
+      lastModified: now,
     });
   }, [game, definition, setGame]);
 
@@ -75,9 +87,11 @@ export function useDynamicGame(gameId: string, gameSlug: string, definition: Dyn
       if (!game) return;
 
       const updatedTotalScores = { ...game.totalScores };
-      Object.entries(roundData.scores).forEach(([playerId, score]) => {
-        updatedTotalScores[playerId] = (updatedTotalScores[playerId] ?? 0) + score;
-      });
+      if (roundData.roundScores) {
+        Object.entries(roundData.roundScores).forEach(([playerId, score]) => {
+          updatedTotalScores[playerId] = (updatedTotalScores[playerId] ?? 0) + score;
+        });
+      }
 
       const updatedRounds = [...game.rounds, roundData];
       const nextRound = game.currentRound + 1;
@@ -91,11 +105,14 @@ export function useDynamicGame(gameId: string, gameSlug: string, definition: Dyn
         allRounds: updatedRounds,
       });
 
+      const now = new Date();
       let updatedGame: DynamicGameSession = {
         ...game,
         rounds: updatedRounds,
         totalScores: updatedTotalScores,
         currentRound: nextRound,
+        updatedAt: now.toISOString(),
+        lastModified: now,
       };
 
       if (winCheck.isComplete) {
@@ -115,6 +132,7 @@ export function useDynamicGame(gameId: string, gameSlug: string, definition: Dyn
   const resetGame = useCallback(() => {
     if (!game) return;
 
+    const now = new Date();
     setGame({
       ...game,
       currentRound: 1,
@@ -125,6 +143,8 @@ export function useDynamicGame(gameId: string, gameSlug: string, definition: Dyn
       ),
       status: 'in-progress',
       winner: undefined,
+      updatedAt: now.toISOString(),
+      lastModified: now,
     });
   }, [game, setGame]);
 

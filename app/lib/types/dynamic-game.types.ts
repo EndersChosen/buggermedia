@@ -262,6 +262,9 @@ export interface DynamicGameSession {
 
   /** Last updated timestamp */
   updatedAt: string;
+
+  /** Last modified date (for compatibility with GameContext) */
+  lastModified: Date;
 }
 
 // ============================================================================
