@@ -265,6 +265,12 @@ export interface DynamicGameSession {
 
   /** Last modified date (for compatibility with GameContext) */
   lastModified: Date;
+
+  /** Start time (for compatibility with BaseGameSession) */
+  startTime: Date;
+
+  /** Is complete flag (for compatibility with BaseGameSession) */
+  isComplete: boolean;
 }
 
 // ============================================================================

@@ -10,7 +10,7 @@ export function useCYAGame(gameId: string) {
 
   useEffect(() => {
     if (currentGame && currentGame.id === gameId && currentGame.gameType === 'cover-your-assets') {
-      setGame(currentGame);
+      setGame(currentGame as CYAGameSession);
     }
   }, [currentGame, gameId]);
 

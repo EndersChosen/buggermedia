@@ -11,7 +11,7 @@ export function useSKGame(gameId: string) {
 
   useEffect(() => {
     if (currentGame && currentGame.id === gameId && currentGame.gameType === 'skull-king') {
-      setGame(currentGame);
+      setGame(currentGame as SKGameSession);
     }
   }, [currentGame, gameId]);
 

@@ -25,6 +25,8 @@ export function useDynamicGame(gameId: string, gameSlug: string, definition: Dyn
         createdAt: now.toISOString(),
         updatedAt: now.toISOString(),
         lastModified: now,
+        startTime: now,
+        isComplete: false,
       };
       setGame(initialGame);
     }
@@ -119,6 +121,7 @@ export function useDynamicGame(gameId: string, gameSlug: string, definition: Dyn
         updatedGame = {
           ...updatedGame,
           status: 'completed',
+          isComplete: true,
           winner: winCheck.winner,
         };
       }
@@ -142,6 +145,7 @@ export function useDynamicGame(gameId: string, gameSlug: string, definition: Dyn
         {}
       ),
       status: 'in-progress',
+      isComplete: false,
       winner: undefined,
       updatedAt: now.toISOString(),
       lastModified: now,
