@@ -96,6 +96,10 @@ const exampleGameDefinition: DynamicGameDefinition = {
     description: 'Player with highest score after 13 rounds wins',
   },
   metadata: {
+    name: 'Example Yahtzee Game',
+    description: 'Dice game where players try to score points by rolling combinations',
+    minPlayers: 2,
+    maxPlayers: 6,
     version: 1,
     generatedBy: 'ai',
     generatedAt: new Date().toISOString(),
