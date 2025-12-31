@@ -28,3 +28,25 @@ export function getGameDefinition(gameType: GameType): GameDefinition {
 export function getAllGames(): GameDefinition[] {
   return Object.values(GAME_REGISTRY);
 }
+
+/**
+ * Fetches all games including AI-generated ones from the database
+ */
+export async function getAllGamesWithAI(): Promise<GameDefinition[]> {
+  try {
+    const response = await fetch('/api/games', {
+      cache: 'no-store', // Don't cache so we always get latest games
+    });
+
+    if (!response.ok) {
+      console.warn('Failed to fetch AI games, falling back to hardcoded only');
+      return getAllGames();
+    }
+
+    const data = await response.json();
+    return data.combined || getAllGames();
+  } catch (error) {
+    console.error('Error fetching games with AI:', error);
+    return getAllGames();
+  }
+}

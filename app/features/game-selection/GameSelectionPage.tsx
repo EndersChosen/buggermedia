@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { GameDefinition, Player, GameType } from '@/types/game.types';
 import { useGame } from '@/context/GameContext';
-import { getAllGames } from './gameRegistry';
+import { getAllGames, getAllGamesWithAI } from './gameRegistry';
 import { GameGrid } from './components/GameGrid';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
@@ -20,8 +20,19 @@ export function GameSelectionPage() {
   const [playerNames, setPlayerNames] = useState<string[]>(['', '']);
   const [targetScore, setTargetScore] = useState<string>('1000000');
   const [showPlayerSetup, setShowPlayerSetup] = useState(false);
+  const [games, setGames] = useState<GameDefinition[]>(getAllGames());
+  const [isLoadingGames, setIsLoadingGames] = useState(true);
 
-  const games = getAllGames();
+  // Fetch all games including AI-generated ones
+  useEffect(() => {
+    async function fetchGames() {
+      setIsLoadingGames(true);
+      const allGames = await getAllGamesWithAI();
+      setGames(allGames);
+      setIsLoadingGames(false);
+    }
+    fetchGames();
+  }, []);
 
   const handleGameSelect = (game: GameDefinition) => {
     setSelectedGame(game);
