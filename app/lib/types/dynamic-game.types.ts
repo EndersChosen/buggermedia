@@ -205,6 +205,10 @@ export interface DynamicGameDefinition {
 
   /** Game metadata */
   metadata: {
+    name: string;
+    description: string;
+    minPlayers: number;
+    maxPlayers: number;
     version: number;
     generatedBy: 'ai' | 'manual';
     generatedAt?: string;
