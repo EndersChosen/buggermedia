@@ -181,10 +181,9 @@ export function GameSelectionPage() {
         </div>
       </div>
 
-      <GameGrid games={games} onGameSelect={handleGameSelect} />
-
+      {/* Active Games */}
       {activeGames.length > 0 && (
-        <div className="mt-12">
+        <div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Active Games</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {activeGames.map((game) => (
@@ -235,6 +234,14 @@ export function GameSelectionPage() {
           </div>
         </div>
       )}
+
+      {/* Game Library */}
+      <div>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+          {activeGames.length > 0 ? 'All Games' : 'Game Library'}
+        </h2>
+        <GameGrid games={games} onGameSelect={handleGameSelect} />
+      </div>
 
       {/* Player Setup Modal */}
       <Modal
