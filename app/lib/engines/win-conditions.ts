@@ -11,22 +11,21 @@ import type {
   EvaluationContext,
 } from '@/lib/types/dynamic-game.types';
 
+export interface WinnerInfo {
+  playerId: string;
+  score: number;
+  reason?: string;
+}
+
 export interface WinCheckResult {
   /** Whether the game is complete */
   isComplete: boolean;
 
   /** Winner information (if game is complete) */
-  winner?: {
-    playerId: string;
-    score: number;
-    reason?: string;
-  };
+  winner?: WinnerInfo;
 
   /** Multiple winners (for ties) */
-  winners?: Array<{
-    playerId: string;
-    score: number;
-  }>;
+  winners?: WinnerInfo[];
 
   /** Reason for incompleteness (if not complete) */
   reason?: string;
@@ -90,7 +89,7 @@ function buildWinContext(gameContext: EvaluationContext): Record<string, any> {
 /**
  * Finds the player(s) with the highest score
  */
-function findHighestScore(scores: Record<string, number>): WinCheckResult['winner'][] {
+function findHighestScore(scores: Record<string, number>): WinnerInfo[] {
   if (Object.keys(scores).length === 0) {
     return [];
   }
@@ -109,7 +108,7 @@ function findHighestScore(scores: Record<string, number>): WinCheckResult['winne
 /**
  * Finds the player(s) with the lowest score
  */
-function findLowestScore(scores: Record<string, number>): WinCheckResult['winner'][] {
+function findLowestScore(scores: Record<string, number>): WinnerInfo[] {
   if (Object.keys(scores).length === 0) {
     return [];
   }
