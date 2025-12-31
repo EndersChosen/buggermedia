@@ -26,7 +26,7 @@ export function validateGameSummary(summary: unknown): ValidationResult {
   if (typeof s.minPlayers !== 'number' || s.minPlayers < 1) {
     errors.push('minPlayers must be a positive number');
   }
-  if (typeof s.maxPlayers !== 'number' || s.maxPlayers < s.minPlayers) {
+  if (typeof s.maxPlayers !== 'number' || s.maxPlayers < (s.minPlayers as number)) {
     errors.push('maxPlayers must be >= minPlayers');
   }
   if (!s.rounds || typeof s.rounds !== 'object') {
@@ -65,7 +65,7 @@ export function validateGameDefinition(definition: unknown): ValidationResult {
     if (typeof meta.minPlayers !== 'number' || meta.minPlayers < 1) {
       errors.push('metadata.minPlayers must be a positive number');
     }
-    if (typeof meta.maxPlayers !== 'number' || meta.maxPlayers < meta.minPlayers) {
+    if (typeof meta.maxPlayers !== 'number' || meta.maxPlayers < (meta.minPlayers as number)) {
       errors.push('metadata.maxPlayers must be >= minPlayers');
     }
   }
