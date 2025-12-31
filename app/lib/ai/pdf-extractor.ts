@@ -1,11 +1,12 @@
 import pdf from 'pdf-parse';
-import Tesseract, { createWorker } from 'tesseract.js';
-import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf';
-import { createCanvas } from 'canvas';
-import path from 'path';
+// OCR imports commented out - OCR is temporarily disabled
+// import Tesseract, { createWorker } from 'tesseract.js';
+// import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf';
+// import { createCanvas } from 'canvas';
+// import path from 'path';
 
 // Configure pdf.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = require('pdfjs-dist/legacy/build/pdf.worker.entry');
+// pdfjsLib.GlobalWorkerOptions.workerSrc = require('pdfjs-dist/legacy/build/pdf.worker.entry');
 
 export interface PDFExtractionResult {
   text: string;
@@ -20,7 +21,9 @@ export interface PDFExtractionResult {
 
 /**
  * Extracts text content from a PDF buffer using OCR (for image-based PDFs)
+ * TEMPORARILY DISABLED - OCR functionality is currently disabled
  */
+/*
 async function extractTextWithOCR(pdfBuffer: Buffer): Promise<string> {
   console.log('Image-based PDF detected. Using OCR...');
 
