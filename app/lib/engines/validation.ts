@@ -41,6 +41,33 @@ function evaluateValidationRule(
 }
 
 /**
+ * Safely evaluates a numeric expression
+ */
+function evaluateNumericExpression(
+  expression: string,
+  context: Record<string, any>
+): number {
+  try {
+    // Add common helper functions
+    const extendedContext = {
+      ...context,
+      Math,
+      abs: Math.abs,
+      min: Math.min,
+      max: Math.max,
+    };
+
+    const func = new Function(...Object.keys(extendedContext), `return (${expression});`);
+    const result = func(...Object.values(extendedContext));
+
+    return Number(result);
+  } catch (error) {
+    console.error(`Error evaluating numeric expression "${expression}":`, error);
+    return 0; // Return 0 if expression errors
+  }
+}
+
+/**
  * Builds a context object for validation from round data
  */
 function buildValidationContext(
@@ -143,7 +170,7 @@ function validateField(
 
       // Check max expression
       if (field.validation?.maxExpression) {
-        const maxValue = evaluateValidationRule(field.validation.maxExpression, context);
+        const maxValue = evaluateNumericExpression(field.validation.maxExpression, context);
         if (numValue > maxValue) {
           return `${field.label}${playerName ? ` for ${playerName}` : ''} cannot exceed ${maxValue}`;
         }
