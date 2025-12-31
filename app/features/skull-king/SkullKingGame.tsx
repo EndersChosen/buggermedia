@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { EnhancedRulesModal } from '@/features/rules/components/EnhancedRulesModal';
 import { skRules } from './skRules';
-import { ArrowLeft, Trophy, Home, BookOpen } from 'lucide-react';
+import { ArrowLeft, Trophy, Home, BookOpen, Skull } from 'lucide-react';
 import { SKRound, SKBonusDetails } from '@/types/game.types';
 
 export function SkullKingGame() {
@@ -76,7 +76,7 @@ export function SkullKingGame() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 sk-theme">
       <div className="flex items-center justify-between">
         <Button variant="ghost" onClick={handleBackHome} size="sm">
           <ArrowLeft className="w-4 h-4 mr-2" />
@@ -93,38 +93,41 @@ export function SkullKingGame() {
         </div>
       </div>
 
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Skull King</h1>
-        <p className="text-gray-600 dark:text-gray-300 mt-1">
-          {game.players.length} players • 10 rounds
-        </p>
+      <div className="sk-header">
+        <div className="flex items-center gap-4">
+          <Skull className="w-12 h-12 text-current" />
+          <div>
+            <h1 className="text-4xl font-bold sk-title">Skull King</h1>
+            <p className="text-amber-100 mt-1">
+              {game.players.length} players • 10 rounds
+            </p>
+          </div>
+        </div>
       </div>
 
       {gameComplete && winner && (
-        <Card className="bg-gradient-to-r from-yellow-50 to-yellow-100 dark:from-yellow-900/30 dark:to-yellow-800/30 border-yellow-300 dark:border-yellow-700">
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <Trophy className="w-8 h-8 text-yellow-600 dark:text-yellow-400" />
-              <div>
-                <CardTitle className="text-yellow-900 dark:text-yellow-200">Game Complete!</CardTitle>
-                <p className="text-yellow-700 dark:text-yellow-300 text-sm mt-1">
-                  {winner.player.name} wins with {winner.score} points!
-                </p>
-              </div>
+        <div className="sk-winner-banner p-6 rounded-lg">
+          <div className="flex items-center gap-4 mb-4">
+            <Trophy className="w-12 h-12 text-red-900" />
+            <div>
+              <h2 className="text-3xl font-bold text-gray-900" style={{ fontFamily: 'Georgia, serif' }}>
+                Game Complete!
+              </h2>
+              <p className="text-xl text-gray-800 mt-1">
+                🏴‍☠️ {winner.player.name} wins with {winner.score} points!
+              </p>
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-3">
-              <Button onClick={handleBackHome} variant="primary">
-                <Home className="w-4 h-4 mr-2" />
-                Back to Home
-              </Button>
-              <Button onClick={handleEndGame} variant="secondary">
-                End & Save Game
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+          </div>
+          <div className="flex gap-3">
+            <Button onClick={handleBackHome} variant="primary" className="sk-button-primary">
+              <Home className="w-4 h-4 mr-2" />
+              Back to Home
+            </Button>
+            <Button onClick={handleEndGame} variant="secondary">
+              End & Save Game
+            </Button>
+          </div>
+        </div>
       )}
 
       <Card>

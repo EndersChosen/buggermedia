@@ -1,5 +1,8 @@
+import type { DynamicGameSession, DynamicGameDefinition } from '@/lib/types/dynamic-game.types';
+
 // Base types
-export type GameType = 'cover-your-assets' | 'skull-king';
+export type HardcodedGameType = 'cover-your-assets' | 'skull-king';
+export type GameType = HardcodedGameType | string; // Support AI-generated games with dynamic slugs
 
 export interface Player {
   id: string;
@@ -61,7 +64,7 @@ export interface SKGameSession extends BaseGameSession {
   currentRound: number; // 1-10
 }
 
-export type GameSession = CYAGameSession | SKGameSession;
+export type GameSession = CYAGameSession | SKGameSession | DynamicGameSession;
 
 // Game registry
 export interface GameDefinition {
@@ -72,6 +75,8 @@ export interface GameDefinition {
   maxPlayers: number;
   imageUrl?: string;
   rules: GameRules;
+  source?: 'hardcoded' | 'ai-generated'; // Track game origin
+  dynamicDefinition?: DynamicGameDefinition; // For AI-generated games
 }
 
 export interface RuleSection {

@@ -17,10 +17,10 @@ export function calculateSKRoundScore({
   // Zero bid handling
   if (bid === 0) {
     if (tricks === 0) {
-      // Success: 10 points × cards dealt this round
-      return roundNumber * 10;
+      // Success: 10 points × cards dealt this round + any special bonuses (e.g., Loot alliance)
+      return roundNumber * 10 + bonusPoints;
     } else {
-      // Failure: -10 points × cards dealt this round
+      // Failure: -10 points × cards dealt this round (bonuses not counted)
       return -(roundNumber * 10);
     }
   }

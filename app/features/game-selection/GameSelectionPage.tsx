@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
-import { Trash2, Play } from 'lucide-react';
+import { Trash2, Play, Upload } from 'lucide-react';
 
 export function GameSelectionPage() {
   const router = useRouter();
@@ -104,6 +104,28 @@ export function GameSelectionPage() {
         <p className="text-gray-600 dark:text-gray-300">
           Select a game to start tracking scores, or continue an existing game below
         </p>
+      </div>
+
+      {/* Upload New Game Button */}
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-2 border-dashed border-blue-300 dark:border-blue-700 rounded-lg p-6">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex-1 text-center md:text-left">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+              Have a new game?
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-300">
+              Upload a PDF rulebook and our AI will create a playable score card
+            </p>
+          </div>
+          <Button
+            onClick={() => router.push('/upload')}
+            size="lg"
+            className="whitespace-nowrap"
+          >
+            <Upload className="w-4 h-4 mr-2" />
+            Upload Rulebook
+          </Button>
+        </div>
       </div>
 
       <GameGrid games={games} onGameSelect={handleGameSelect} />

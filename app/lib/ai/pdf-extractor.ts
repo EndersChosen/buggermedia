@@ -1,0 +1,171 @@
+import pdf from 'pdf-parse';
+import Tesseract from 'tesseract.js';
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf';
+import { createCanvas } from 'canvas';
+
+// Configure pdf.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = require('pdfjs-dist/legacy/build/pdf.worker.entry');
+
+export interface PDFExtractionResult {
+  text: string;
+  pageCount: number;
+  metadata: {
+    title?: string;
+    author?: string;
+    subject?: string;
+  };
+  usedOCR?: boolean;
+}
+
+/**
+ * Extracts text content from a PDF buffer using OCR (for image-based PDFs)
+ */
+async function extractTextWithOCR(pdfBuffer: Buffer): Promise<string> {
+  console.log('Image-based PDF detected. Using OCR...');
+
+  try {
+    // Load PDF with pdfjs
+    const loadingTask = pdfjsLib.getDocument({
+      data: new Uint8Array(pdfBuffer),
+    });
+
+    const pdfDocument = await loadingTask.promise;
+    const numPages = Math.min(pdfDocument.numPages, 10); // Limit to 10 pages
+    let allText = '';
+
+    // Process each page
+    for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+      try {
+        console.log(`OCR processing page ${pageNum}/${numPages}...`);
+
+        const page = await pdfDocument.getPage(pageNum);
+        const viewport = page.getViewport({ scale: 2.0 }); // Higher scale for better OCR
+
+        // Create canvas
+        const canvas = createCanvas(viewport.width, viewport.height);
+        const context = canvas.getContext('2d');
+
+        // Render PDF page to canvas
+        await page.render({
+          canvasContext: context as any,
+          viewport: viewport,
+        }).promise;
+
+        // Get image data as base64
+        const imageData = canvas.toDataURL('image/png');
+
+        // Run OCR on the rendered page
+        const ocrResult = await Tesseract.recognize(imageData, 'eng', {
+          logger: (m) => {
+            if (m.status === 'recognizing text') {
+              console.log(`OCR page ${pageNum}: ${Math.round(m.progress * 100)}%`);
+            }
+          },
+        });
+
+        allText += ocrResult.data.text + '\n\n';
+      } catch (pageError) {
+        console.error(`Error processing page ${pageNum}:`, pageError);
+      }
+    }
+
+    console.log(`OCR complete. Extracted ${allText.length} characters.`);
+    return allText.trim();
+  } catch (error) {
+    throw new Error(
+      `OCR extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
+  }
+}
+
+/**
+ * Extracts text content from a PDF buffer
+ */
+export async function extractTextFromPDF(
+  pdfBuffer: Buffer
+): Promise<PDFExtractionResult> {
+  try {
+    // First, try normal PDF text extraction
+    const data = await pdf(pdfBuffer);
+    const extractedText = data.text.trim();
+
+    // Check if we got meaningful text
+    if (extractedText.length >= 100) {
+      // Text-based PDF with sufficient content
+      return {
+        text: extractedText,
+        pageCount: data.numpages,
+        metadata: {
+          title: data.info?.Title,
+          author: data.info?.Author,
+          subject: data.info?.Subject,
+        },
+        usedOCR: false,
+      };
+    }
+
+    // Text extraction yielded little/no text - likely image-based PDF
+    console.log('PDF text extraction yielded insufficient text. Attempting OCR...');
+
+    const ocrText = await extractTextWithOCR(pdfBuffer);
+
+    return {
+      text: ocrText,
+      pageCount: data.numpages,
+      metadata: {
+        title: data.info?.Title,
+        author: data.info?.Author,
+        subject: data.info?.Subject,
+      },
+      usedOCR: true,
+    };
+  } catch (error) {
+    throw new Error(
+      `PDF extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
+  }
+}
+
+/**
+ * Validates if PDF text extraction was successful
+ */
+export function validatePDFText(text: string): {
+  isValid: boolean;
+  error?: string;
+} {
+  if (!text || text.trim().length === 0) {
+    return {
+      isValid: false,
+      error: 'PDF appears to be empty or contains no extractable text',
+    };
+  }
+
+  if (text.length < 100) {
+    return {
+      isValid: false,
+      error: 'PDF text is too short (less than 100 characters). OCR may have failed.',
+    };
+  }
+
+  return { isValid: true };
+}
+
+/**
+ * Downloads PDF from URL and returns buffer
+ */
+export async function downloadPDF(url: string): Promise<Buffer> {
+  try {
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error(`Failed to download PDF: ${response.statusText}`);
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    return Buffer.from(arrayBuffer);
+  } catch (error) {
+    throw new Error(
+      `PDF download failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
+  }
+}
