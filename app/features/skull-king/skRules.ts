@@ -29,7 +29,7 @@ export const skRules: GameRules = {
       {
         id: 'game-overview',
         title: 'Game Overview',
-        content: `Skull King is a pirate-themed trick-taking card game for 2-6 players. Over 10 rounds of escalating complexity, players must predict exactly how many tricks they'll win. Successful predictions earn points, while failures cost you!
+        content: `Skull King is a pirate-themed trick-taking card game for 2-8 players. Over 10 rounds of escalating complexity, players must predict exactly how many tricks they'll win. Successful predictions earn points, while failures cost you!
 
 The game features a unique card hierarchy where special character cards - Pirates, Mermaids, and the fearsome Skull King - add strategic depth beyond traditional trick-taking games.
 

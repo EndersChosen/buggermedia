@@ -8,7 +8,7 @@ export const GAME_REGISTRY: Record<GameType, GameDefinition> = {
     name: 'Cover Your Assets',
     description: 'Race to become the first millionaire by collecting valuable asset pairs!',
     minPlayers: 2,
-    maxPlayers: 6,
+    maxPlayers: 8,
     rules: cyaRules,
   },
   'skull-king': {
@@ -16,7 +16,7 @@ export const GAME_REGISTRY: Record<GameType, GameDefinition> = {
     name: 'Skull King',
     description: 'Predict your tricks accurately across 10 rounds to earn the highest score!',
     minPlayers: 2,
-    maxPlayers: 6,
+    maxPlayers: 8,
     rules: skRules,
   },
 };
