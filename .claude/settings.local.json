@@ -23,7 +23,9 @@
       "Bash(powershell -Command \"Get-Content ''C:\\\\Users\\\\ender\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\e--Programming-buggermedia\\\\tasks\\\\badaafa.output'' | Select-String -Pattern ''POST /api/upload|POST /api/ai/process|OCR|Error|Failed'' -Context 2,2 | Select-Object -Last 30\")",
       "Bash(powershell -Command \"Get-Process | Where-Object { $_ProcessName -like ''*node*'' -and $_CommandLine -like ''*next dev*'' } | Stop-Process -Force\")",
       "Bash(npx tsc:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ]
   }
 }
