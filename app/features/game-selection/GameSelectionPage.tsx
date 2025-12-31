@@ -23,11 +23,26 @@ export function GameSelectionPage() {
   const [games, setGames] = useState<GameDefinition[]>(getAllGames());
   const [isLoadingGames, setIsLoadingGames] = useState(true);
 
+  // Debug: Log when selectedGame changes
+  useEffect(() => {
+    if (selectedGame) {
+      console.log('=== SELECTED GAME CHANGED ===');
+      console.log('New selected game:', selectedGame.name, selectedGame.id);
+    } else {
+      console.log('=== SELECTED GAME CLEARED ===');
+    }
+  }, [selectedGame]);
+
   // Fetch all games including AI-generated ones
   useEffect(() => {
     async function fetchGames() {
       setIsLoadingGames(true);
       const allGames = await getAllGamesWithAI();
+      console.log('=== FETCHED GAMES ===');
+      console.log('Total games:', allGames.length);
+      allGames.forEach((g, i) => {
+        console.log(`${i + 1}. ${g.name} (${g.id})`, (g as any).source);
+      });
       setGames(allGames);
       setIsLoadingGames(false);
     }
@@ -35,6 +50,10 @@ export function GameSelectionPage() {
   }, []);
 
   const handleGameSelect = (game: GameDefinition) => {
+    console.log('=== GAME SELECTED ===');
+    console.log('Game ID:', game.id);
+    console.log('Game Name:', game.name);
+    console.log('Game:', game);
     setSelectedGame(game);
     setPlayerNames(['', '']);
     setTargetScore('1000000');
@@ -215,8 +234,11 @@ export function GameSelectionPage() {
       {/* Player Setup Modal */}
       <Modal
         isOpen={showPlayerSetup}
-        onClose={() => setShowPlayerSetup(false)}
-        title={`Setup: ${selectedGame?.name}`}
+        onClose={() => {
+          console.log('=== MODAL CLOSED ===');
+          setShowPlayerSetup(false);
+        }}
+        title={`Setup: ${selectedGame?.name || 'Unknown'}`}
         size="md"
       >
         <div className="space-y-4">
