@@ -14,39 +14,66 @@ export const maxDuration = 300; // 5 minutes for AI processing
  * Called by the upload route to process PDFs asynchronously
  */
 export async function POST(request: Request) {
+  let uploadId: string | undefined;
+
   try {
     const body = await request.json();
-    const { uploadId, pdfUrl } = body;
+    uploadId = body.uploadId;
+    const { pdfUrl, rulesText, gameName } = body;
 
-    if (!uploadId || !pdfUrl) {
+    if (!uploadId) {
       return NextResponse.json(
-        { error: 'Missing uploadId or pdfUrl' },
+        { error: 'Missing uploadId' },
         { status: 400 }
       );
     }
 
-    // Update status: PDF parsing
-    await db
-      .update(uploadLogs)
-      .set({ status: 'pdf_parsed' })
-      .where(eq(uploadLogs.id, uploadId));
+    let extractedText: string;
 
-    // Download and extract PDF text
-    const pdfBuffer = await downloadPDF(pdfUrl);
-    const { text: pdfText } = await extractTextFromPDF(pdfBuffer);
+    // Check if this is text-based or PDF-based submission
+    if (rulesText && gameName) {
+      // Text-based submission - skip PDF parsing
+      console.log('Processing text-based submission for:', gameName);
+      extractedText = rulesText;
 
-    // Validate PDF text
-    const textValidation = validatePDFText(pdfText);
-    if (!textValidation.isValid) {
+      // Update status: Text received
       await db
         .update(uploadLogs)
-        .set({
-          status: 'failed',
-          errorMessage: textValidation.error,
-        })
+        .set({ status: 'pdf_parsed' })
+        .where(eq(uploadLogs.id, uploadId));
+    } else if (pdfUrl) {
+      // PDF-based submission
+      console.log('Processing PDF-based submission');
+
+      // Update status: PDF parsing
+      await db
+        .update(uploadLogs)
+        .set({ status: 'pdf_parsed' })
         .where(eq(uploadLogs.id, uploadId));
 
-      return NextResponse.json({ error: textValidation.error }, { status: 400 });
+      // Download and extract PDF text
+      const pdfBuffer = await downloadPDF(pdfUrl);
+      const { text: pdfText } = await extractTextFromPDF(pdfBuffer);
+      extractedText = pdfText;
+
+      // Validate PDF text
+      const textValidation = validatePDFText(pdfText);
+      if (!textValidation.isValid) {
+        await db
+          .update(uploadLogs)
+          .set({
+            status: 'failed',
+            errorMessage: textValidation.error,
+          })
+          .where(eq(uploadLogs.id, uploadId));
+
+        return NextResponse.json({ error: textValidation.error }, { status: 400 });
+      }
+    } else {
+      return NextResponse.json(
+        { error: 'Missing pdfUrl or rulesText' },
+        { status: 400 }
+      );
     }
 
     // Update status: AI processing
@@ -56,7 +83,7 @@ export async function POST(request: Request) {
       .where(eq(uploadLogs.id, uploadId));
 
     // Run AI generation (3-stage pipeline)
-    const { summary, definition, rules } = await generateCompleteGame(pdfText);
+    const { summary, definition, rules } = await generateCompleteGame(extractedText, gameName);
 
     // Validate AI outputs
     const validation = validateCompleteGame({ summary, definition, rules });
@@ -143,19 +170,18 @@ export async function POST(request: Request) {
     console.error('AI processing error:', error);
 
     // Try to update upload log to failed
-    try {
-      const body = await request.clone().json();
-      if (body.uploadId) {
+    if (uploadId) {
+      try {
         await db
           .update(uploadLogs)
           .set({
             status: 'failed',
             errorMessage: error instanceof Error ? error.message : 'Unknown error',
           })
-          .where(eq(uploadLogs.id, body.uploadId));
+          .where(eq(uploadLogs.id, uploadId));
+      } catch (updateError) {
+        console.error('Failed to update upload log:', updateError);
       }
-    } catch (updateError) {
-      console.error('Failed to update upload log:', updateError);
     }
 
     return NextResponse.json(

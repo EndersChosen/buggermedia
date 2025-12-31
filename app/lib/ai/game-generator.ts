@@ -164,7 +164,10 @@ export async function generateGameRules(pdfText: string): Promise<GameRules> {
 /**
  * Full 3-stage pipeline: PDF text → Summary → Definition → Rules
  */
-export async function generateCompleteGame(pdfText: string): Promise<{
+export async function generateCompleteGame(
+  pdfText: string,
+  providedGameName?: string
+): Promise<{
   summary: GameSummary;
   definition: GameDefinition;
   rules: GameRules;
@@ -172,8 +175,18 @@ export async function generateCompleteGame(pdfText: string): Promise<{
   // Stage 1: Extract summary
   const summary = await generateGameSummary(pdfText);
 
+  // Override game name if provided
+  if (providedGameName) {
+    summary.gameName = providedGameName;
+  }
+
   // Stage 2: Generate definition
   const definition = await generateGameDefinition(pdfText, summary);
+
+  // Override definition metadata name if provided
+  if (providedGameName) {
+    definition.metadata.name = providedGameName;
+  }
 
   // Stage 3: Generate rules
   const rules = await generateGameRules(pdfText);

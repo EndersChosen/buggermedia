@@ -13,7 +13,7 @@ export const aiGeneratedGames = pgTable('ai_generated_games', {
   minPlayers: integer('min_players').notNull(),
   maxPlayers: integer('max_players').notNull(),
   status: gameStatusEnum('status').notNull().default('processing'),
-  pdfUrl: text('pdf_url').notNull(),
+  pdfUrl: text('pdf_url'), // Nullable - text submissions don't have PDFs
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
   generationMetadata: jsonb('generation_metadata'),

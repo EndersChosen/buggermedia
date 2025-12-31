@@ -1,7 +1,8 @@
 import pdf from 'pdf-parse';
-import Tesseract from 'tesseract.js';
+import Tesseract, { createWorker } from 'tesseract.js';
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf';
 import { createCanvas } from 'canvas';
+import path from 'path';
 
 // Configure pdf.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = require('pdfjs-dist/legacy/build/pdf.worker.entry');
@@ -23,7 +24,27 @@ export interface PDFExtractionResult {
 async function extractTextWithOCR(pdfBuffer: Buffer): Promise<string> {
   console.log('Image-based PDF detected. Using OCR...');
 
+  let worker: Tesseract.Worker | null = null;
+
   try {
+    console.log('Initializing Tesseract worker...');
+
+    // Create and initialize Tesseract worker
+    // Use simpler configuration without explicit paths
+    worker = await createWorker({
+      logger: (m) => {
+        if (m.status === 'recognizing text') {
+          console.log(`OCR progress: ${Math.round(m.progress * 100)}%`);
+        } else if (m.status) {
+          console.log(`OCR status: ${m.status}`);
+        }
+      },
+    });
+
+    await worker.loadLanguage('eng');
+    await worker.initialize('eng');
+    console.log('Tesseract worker initialized successfully');
+
     // Load PDF with pdfjs
     const loadingTask = pdfjsLib.getDocument({
       data: new Uint8Array(pdfBuffer),
@@ -51,30 +72,31 @@ async function extractTextWithOCR(pdfBuffer: Buffer): Promise<string> {
           viewport: viewport,
         }).promise;
 
-        // Get image data as base64
-        const imageData = canvas.toDataURL('image/png');
+        // Get image buffer
+        const imageBuffer = canvas.toBuffer('image/png');
 
         // Run OCR on the rendered page
-        const ocrResult = await Tesseract.recognize(imageData, 'eng', {
-          logger: (m) => {
-            if (m.status === 'recognizing text') {
-              console.log(`OCR page ${pageNum}: ${Math.round(m.progress * 100)}%`);
-            }
-          },
-        });
+        const { data } = await worker.recognize(imageBuffer);
 
-        allText += ocrResult.data.text + '\n\n';
+        allText += data.text + '\n\n';
+
+        console.log(`Page ${pageNum} OCR complete. Extracted ${data.text.length} characters.`);
       } catch (pageError) {
         console.error(`Error processing page ${pageNum}:`, pageError);
       }
     }
 
-    console.log(`OCR complete. Extracted ${allText.length} characters.`);
+    console.log(`OCR complete. Total extracted: ${allText.length} characters.`);
     return allText.trim();
   } catch (error) {
     throw new Error(
       `OCR extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`
     );
+  } finally {
+    // Clean up worker
+    if (worker) {
+      await worker.terminate();
+    }
   }
 }
 
@@ -105,20 +127,29 @@ export async function extractTextFromPDF(
     }
 
     // Text extraction yielded little/no text - likely image-based PDF
-    console.log('PDF text extraction yielded insufficient text. Attempting OCR...');
+    console.log('PDF text extraction yielded insufficient text.');
+    console.log('This appears to be an image-based (scanned) PDF.');
 
-    const ocrText = await extractTextWithOCR(pdfBuffer);
+    // TODO: OCR support is temporarily disabled due to Tesseract.js compatibility issues
+    // in serverless environments. Re-enable once fixed.
+    throw new Error(
+      'This PDF appears to be image-based (scanned). ' +
+      'Please upload a text-based PDF or use OCR software to convert it first. ' +
+      'OCR support is coming soon!'
+    );
 
-    return {
-      text: ocrText,
-      pageCount: data.numpages,
-      metadata: {
-        title: data.info?.Title,
-        author: data.info?.Author,
-        subject: data.info?.Subject,
-      },
-      usedOCR: true,
-    };
+    // Temporarily disabled OCR - uncomment once Tesseract.js worker issues are resolved
+    // const ocrText = await extractTextWithOCR(pdfBuffer);
+    // return {
+    //   text: ocrText,
+    //   pageCount: data.numpages,
+    //   metadata: {
+    //     title: data.info?.Title,
+    //     author: data.info?.Author,
+    //     subject: data.info?.Subject,
+    //   },
+    //   usedOCR: true,
+    // };
   } catch (error) {
     throw new Error(
       `PDF extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`
