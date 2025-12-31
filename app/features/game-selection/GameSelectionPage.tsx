@@ -34,7 +34,31 @@ export function GameSelectionPage() {
     fetchGames();
   }, []);
 
-  const handleGameSelect = (game: GameDefinition) => {
+  const handleGameSelect = async (game: GameDefinition) => {
+    // AI-generated games: Skip modal, go directly to game page with its own setup
+    if ((game as any).source === 'ai-generated') {
+      try {
+        // Fetch the game definition
+        const response = await fetch(`/api/games/${game.id}/definition`);
+        if (!response.ok) {
+          alert('Failed to load game definition. Please try again.');
+          return;
+        }
+        const data = await response.json();
+
+        // Create game with no players (setup phase)
+        const gameId = createGame(game.id, [], { dynamicDefinition: data.definition });
+
+        // Navigate to game page where player setup will happen
+        router.push(`/game/${game.id}/${gameId}`);
+      } catch (error) {
+        console.error('Error loading AI game:', error);
+        alert('Failed to load game. Please try again.');
+      }
+      return;
+    }
+
+    // Hardcoded games: Show modal for player setup
     setSelectedGame(game);
     setPlayerNames(['', '']);
     setTargetScore('1000000');

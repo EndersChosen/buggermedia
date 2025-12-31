@@ -102,7 +102,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           rounds: [],
           totalScores: Object.fromEntries(players.map((p) => [p.id, 0])),
           dynamicDefinition: options.dynamicDefinition,
-          status: 'in-progress', // Start directly in-progress since players are already set
+          status: players.length === 0 ? 'setup' : 'in-progress', // Setup if no players, otherwise in-progress
           createdAt: now.toISOString(),
           updatedAt: now.toISOString(),
           lastModified: now,
