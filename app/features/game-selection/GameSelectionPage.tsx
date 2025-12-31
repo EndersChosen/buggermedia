@@ -171,7 +171,9 @@ export function GameSelectionPage() {
                       <CardTitle className="text-lg">
                         {game.gameType === 'cover-your-assets'
                           ? 'Cover Your Assets'
-                          : 'Skull King'}
+                          : game.gameType === 'skull-king'
+                          ? 'Skull King'
+                          : (game as any).dynamicDefinition?.metadata?.name || game.gameType}
                       </CardTitle>
                       <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                         {new Date(game.startTime).toLocaleDateString()}
