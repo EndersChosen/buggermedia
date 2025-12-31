@@ -29,6 +29,10 @@ export function useSKGame(gameId: string) {
     const lootBonuses: Record<string, number> = {};
     game.players.forEach((player) => {
       lootBonuses[player.id] = 0;
+    });
+
+    // Check all alliances and award bonuses to BOTH players if both made their bids
+    game.players.forEach((player) => {
       const playerDetails = bonusDetails[player.id];
       if (playerDetails?.lootAlliances && playerDetails.lootAlliances.length > 0) {
         // Check if this player made their bid
@@ -39,8 +43,9 @@ export function useSKGame(gameId: string) {
           playerDetails.lootAlliances.forEach((alliedPlayerId) => {
             const alliedPlayerMadeBid = bids[alliedPlayerId] === tricks[alliedPlayerId];
             if (alliedPlayerMadeBid) {
-              // Both players made their bid, award 20 points
+              // Both players made their bid, award 20 points to BOTH players
               lootBonuses[player.id] += 20;
+              lootBonuses[alliedPlayerId] += 20;
             }
           });
         }
@@ -94,6 +99,10 @@ export function useSKGame(gameId: string) {
     const lootBonuses: Record<string, number> = {};
     game.players.forEach((player) => {
       lootBonuses[player.id] = 0;
+    });
+
+    // Check all alliances and award bonuses to BOTH players if both made their bids
+    game.players.forEach((player) => {
       const playerDetails = bonusDetails[player.id];
       if (playerDetails?.lootAlliances && playerDetails.lootAlliances.length > 0) {
         // Check if this player made their bid
@@ -104,8 +113,9 @@ export function useSKGame(gameId: string) {
           playerDetails.lootAlliances.forEach((alliedPlayerId) => {
             const alliedPlayerMadeBid = bids[alliedPlayerId] === tricks[alliedPlayerId];
             if (alliedPlayerMadeBid) {
-              // Both players made their bid, award 20 points
+              // Both players made their bid, award 20 points to BOTH players
               lootBonuses[player.id] += 20;
+              lootBonuses[alliedPlayerId] += 20;
             }
           });
         }

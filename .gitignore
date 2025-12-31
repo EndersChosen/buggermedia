@@ -55,6 +55,5 @@ next-env.d.ts
 *.sln
 *.sw?
 
-# Old Vite project (archived)
-old-vite-project/
+# Old Next.js subdirectory (migrated to root)
 card-game-tracker/
