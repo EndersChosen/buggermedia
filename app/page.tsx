@@ -1,5 +1,5 @@
 import { GameSelectionPage } from '@/features/game-selection/GameSelectionPage';
 
-export function HomePage() {
+export default function Home() {
   return <GameSelectionPage />;
 }

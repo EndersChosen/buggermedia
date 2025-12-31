@@ -19,23 +19,18 @@
 
 # production
 /build
-dist
-dist-ssr
 
 # misc
 .DS_Store
 *.pem
-*.local
 
 # debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
-pnpm-debug.log*
-lerna-debug.log*
 
-# env files
+# env files (can opt-in for committing if needed)
 .env*
 
 # vercel
@@ -44,17 +39,3 @@ lerna-debug.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-
-# Old Vite project (archived)
-old-vite-project/
-card-game-tracker/
