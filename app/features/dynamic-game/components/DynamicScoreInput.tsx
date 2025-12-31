@@ -28,6 +28,27 @@ export function DynamicScoreInput({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [previewScores, setPreviewScores] = useState<Record<string, number>>({});
 
+  // Transform flat roundData to nested format expected by scoring engine
+  const transformRoundDataForScoring = (flatData: Record<string, any>) => {
+    const nested: Record<string, any> = {};
+
+    definition.rounds.fields.forEach((field) => {
+      if (field.perPlayer) {
+        // Per-player field: create nested object
+        nested[field.id] = {};
+        players.forEach((player) => {
+          const fieldKey = `${field.id}_${player.id}`;
+          nested[field.id][player.id] = flatData[fieldKey] ?? 0;
+        });
+      } else {
+        // Global field: copy directly
+        nested[field.id] = flatData[field.id] ?? 0;
+      }
+    });
+
+    return nested;
+  };
+
   // Initialize default values
   useEffect(() => {
     const initialData: Record<string, any> = {};
@@ -51,10 +72,11 @@ export function DynamicScoreInput({
   // Calculate preview scores when round data changes
   useEffect(() => {
     try {
+      const transformedData = transformRoundDataForScoring(roundData);
       const result = calculateRoundScores(definition, {
         currentRound: currentRound,
         playerIds: players.map((p) => p.id),
-        roundData: roundData,
+        roundData: transformedData,
         totalScores,
         allRounds: [],
       });
@@ -98,11 +120,14 @@ export function DynamicScoreInput({
   };
 
   const handleSubmit = () => {
+    // Transform to nested format for validation and scoring
+    const transformedData = transformRoundDataForScoring(roundData);
+
     // Validate round data
-    const validation = validateRoundData(definition, roundData, {
+    const validation = validateRoundData(definition, transformedData, {
       currentRound: currentRound,
       playerIds: players.map((p) => p.id),
-      roundData: roundData,
+      roundData: transformedData,
       totalScores,
       allRounds: [],
     });
@@ -119,10 +144,10 @@ export function DynamicScoreInput({
       return;
     }
 
-    // Submit the round
+    // Submit the round with transformed data
     onSubmit({
       roundNumber: currentRound,
-      fields: roundData,
+      fields: transformedData,
       roundScores: previewScores,
       timestamp: new Date().toISOString(),
     });

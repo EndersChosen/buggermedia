@@ -91,14 +91,15 @@ function buildEvaluationContext(
   Object.entries(context.roundData).forEach(([fieldId, value]) => {
     if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
       // Per-player field: { playerId: value }
-      if (playerId && value[playerId] !== undefined) {
-        baseContext[fieldId] = value[playerId];
+      if (playerId) {
+        // Provide a default value of 0 if undefined to prevent ReferenceError
+        baseContext[fieldId] = value[playerId] !== undefined ? value[playerId] : 0;
       }
       // Also provide helper to access other players' values
       baseContext[`${fieldId}_all`] = value;
     } else {
-      // Global field
-      baseContext[fieldId] = value;
+      // Global field - provide 0 if undefined
+      baseContext[fieldId] = value !== undefined ? value : 0;
     }
   });
 
