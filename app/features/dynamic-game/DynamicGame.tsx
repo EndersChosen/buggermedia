@@ -10,7 +10,7 @@ import { DynamicRoundTracker } from './components/DynamicRoundTracker';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
-import { ArrowLeft, Plus, X, Play, RotateCcw, Trash2 } from 'lucide-react';
+import { ArrowLeft, Plus, X, Play, RotateCcw, Trash2, Edit } from 'lucide-react';
 
 interface DynamicGameProps {
   gameId: string;
@@ -181,6 +181,10 @@ export function DynamicGame({ gameId, gameSlug, gameName, definition }: DynamicG
               New Game
             </Button>
           )}
+          <Button variant="secondary" onClick={() => router.push(`/games/${gameSlug}/edit`)}>
+            <Edit className="w-4 h-4 mr-2" />
+            Edit Game
+          </Button>
           <Button variant="secondary" onClick={handleDeleteGame}>
             <Trash2 className="w-4 h-4 mr-2" />
             Delete

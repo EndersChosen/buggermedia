@@ -8,6 +8,7 @@ interface UploadStatusResponse {
   status: UploadStatus;
   progress: number;
   gameSlug?: string | null;
+  needsCompletion?: boolean;
   error?: string;
 }
 
@@ -15,6 +16,7 @@ interface UseUploadPollingResult {
   status: UploadStatus | null;
   progress: number | null;
   gameSlug: string | null;
+  needsCompletion: boolean;
   error: string | null;
   isPolling: boolean;
 }
@@ -25,6 +27,7 @@ export function useUploadPolling(uploadId: string | null): UseUploadPollingResul
   const [status, setStatus] = useState<UploadStatus | null>(null);
   const [progress, setProgress] = useState<number | null>(null);
   const [gameSlug, setGameSlug] = useState<string | null>(null);
+  const [needsCompletion, setNeedsCompletion] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [isPolling, setIsPolling] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -43,6 +46,7 @@ export function useUploadPolling(uploadId: string | null): UseUploadPollingResul
       setStatus(null);
       setProgress(null);
       setGameSlug(null);
+      setNeedsCompletion(false);
       setError(null);
       setIsPolling(false);
       startTimeRef.current = null;
@@ -96,6 +100,7 @@ export function useUploadPolling(uploadId: string | null): UseUploadPollingResul
         setStatus(data.status);
         setProgress(data.progress);
         setGameSlug(data.gameSlug || null);
+        setNeedsCompletion(data.needsCompletion || false);
         setError(data.error || null);
 
         // Log completion or failure details
@@ -155,6 +160,7 @@ export function useUploadPolling(uploadId: string | null): UseUploadPollingResul
     status,
     progress,
     gameSlug,
+    needsCompletion,
     error,
     isPolling,
   };

@@ -37,12 +37,14 @@ export async function GET(
 
     const progress = progressMap[log.status] || 0;
 
-    // If completed, fetch the game slug
+    // If completed, fetch the game slug and completion status
     let gameSlug: string | null = null;
+    let needsCompletion = false;
     if (log.status === 'completed' && log.gameId) {
       const games = await db
         .select({
           gameSlug: aiGeneratedGames.gameSlug,
+          generationMetadata: aiGeneratedGames.generationMetadata,
         })
         .from(aiGeneratedGames)
         .where(eq(aiGeneratedGames.id, log.gameId))
@@ -50,6 +52,8 @@ export async function GET(
 
       if (games.length > 0) {
         gameSlug = games[0].gameSlug;
+        const metadata = games[0].generationMetadata as any;
+        needsCompletion = metadata?.needsCompletion || false;
       }
     }
 
@@ -57,6 +61,7 @@ export async function GET(
       status: log.status,
       progress,
       gameSlug,
+      needsCompletion,
       error: log.errorMessage || undefined,
     });
   } catch (error) {

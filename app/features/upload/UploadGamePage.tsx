@@ -21,7 +21,7 @@ export function UploadGamePage() {
   const [rulesText, setRulesText] = useState<string>('');
   const [gameName, setGameName] = useState<string>('');
 
-  const { status, progress, gameSlug } = useUploadPolling(uploadId);
+  const { status, progress, gameSlug, needsCompletion } = useUploadPolling(uploadId);
 
   const handleFileSelect = (file: File) => {
     setSelectedFile(file);
@@ -108,8 +108,13 @@ export function UploadGamePage() {
   // Update state based on polling status
   if (uploadState === 'processing' && status) {
     if (status === 'completed' && gameSlug) {
-      console.log('[Upload] 🎉 Game successfully generated! Slug:', gameSlug);
-      setUploadState('success');
+      if (needsCompletion) {
+        console.log('[Upload] ⚠️  Game needs completion. Redirecting to completion page...');
+        router.push(`/games/${gameSlug}/complete?uploadId=${uploadId}`);
+      } else {
+        console.log('[Upload] 🎉 Game successfully generated! Slug:', gameSlug);
+        setUploadState('success');
+      }
     } else if (status === 'failed') {
       console.error('[Upload] ❌ AI processing failed');
       setUploadState('error');

@@ -146,6 +146,10 @@ export function GameSelectionPage() {
     }
   };
 
+  const handleGameEdit = (game: GameDefinition) => {
+    router.push(`/games/${game.id}/edit`);
+  };
+
   const isPlayerSetupValid =
     selectedGame &&
     playerNames.filter((name) => name.trim() !== '').length >= selectedGame.minPlayers;
@@ -240,7 +244,7 @@ export function GameSelectionPage() {
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
           {activeGames.length > 0 ? 'All Games' : 'Game Library'}
         </h2>
-        <GameGrid games={games} onGameSelect={handleGameSelect} />
+        <GameGrid games={games} onGameSelect={handleGameSelect} onGameEdit={handleGameEdit} />
       </div>
 
       {/* Player Setup Modal */}
