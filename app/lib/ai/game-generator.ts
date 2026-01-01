@@ -1,10 +1,6 @@
-import Anthropic from '@anthropic-ai/sdk';
 import { SUMMARY_PROMPT, getDefinitionPrompt, RULES_PROMPT, fillPrompt } from './prompts';
 import { getReferenceSchemaString } from './reference-schema';
-
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY!,
-});
+import { AIProvider, getAIProvider, AIModel } from './providers';
 
 export interface GameSummary {
   gameName: string;
@@ -78,26 +74,19 @@ export interface GameRules {
 /**
  * Stage 1: Extract summary from PDF text
  */
-export async function generateGameSummary(pdfText: string): Promise<GameSummary> {
+export async function generateGameSummary(
+  pdfText: string,
+  provider: AIProvider
+): Promise<GameSummary> {
   const prompt = fillPrompt(SUMMARY_PROMPT, { PDF_TEXT: pdfText });
-
-  const message = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
-    max_tokens: 2000,
-    messages: [
-      {
-        role: 'user',
-        content: prompt,
-      },
-    ],
-  });
-
-  const responseText = message.content[0].type === 'text' ? message.content[0].text : '';
+  const responseText = await provider.generateCompletion(prompt);
 
   try {
     return JSON.parse(responseText);
   } catch (error) {
-    throw new Error(`Failed to parse summary JSON: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Failed to parse summary JSON: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
   }
 }
 
@@ -106,58 +95,42 @@ export async function generateGameSummary(pdfText: string): Promise<GameSummary>
  */
 export async function generateGameDefinition(
   pdfText: string,
-  summary: GameSummary
+  summary: GameSummary,
+  provider: AIProvider
 ): Promise<GameDefinition> {
   const referenceSchema = getReferenceSchemaString();
   const summaryString = JSON.stringify(summary, null, 2);
-  const prompt = fillPrompt(
-    getDefinitionPrompt(summaryString, referenceSchema),
-    { PDF_TEXT: pdfText }
-  );
-
-  const message = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
-    max_tokens: 4000,
-    messages: [
-      {
-        role: 'user',
-        content: prompt,
-      },
-    ],
+  const prompt = fillPrompt(getDefinitionPrompt(summaryString, referenceSchema), {
+    PDF_TEXT: pdfText,
   });
 
-  const responseText = message.content[0].type === 'text' ? message.content[0].text : '';
+  const responseText = await provider.generateCompletion(prompt);
 
   try {
     return JSON.parse(responseText);
   } catch (error) {
-    throw new Error(`Failed to parse definition JSON: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Failed to parse definition JSON: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
   }
 }
 
 /**
  * Stage 3: Generate rules documentation
  */
-export async function generateGameRules(pdfText: string): Promise<GameRules> {
+export async function generateGameRules(
+  pdfText: string,
+  provider: AIProvider
+): Promise<GameRules> {
   const prompt = fillPrompt(RULES_PROMPT, { PDF_TEXT: pdfText });
-
-  const message = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
-    max_tokens: 3000,
-    messages: [
-      {
-        role: 'user',
-        content: prompt,
-      },
-    ],
-  });
-
-  const responseText = message.content[0].type === 'text' ? message.content[0].text : '';
+  const responseText = await provider.generateCompletion(prompt);
 
   try {
     return JSON.parse(responseText);
   } catch (error) {
-    throw new Error(`Failed to parse rules JSON: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Failed to parse rules JSON: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
   }
 }
 
@@ -166,14 +139,17 @@ export async function generateGameRules(pdfText: string): Promise<GameRules> {
  */
 export async function generateCompleteGame(
   pdfText: string,
-  providedGameName?: string
+  providedGameName?: string,
+  aiModel: AIModel = 'claude-sonnet-4'
 ): Promise<{
   summary: GameSummary;
   definition: GameDefinition;
   rules: GameRules;
 }> {
+  const provider = getAIProvider(aiModel);
+
   // Stage 1: Extract summary
-  const summary = await generateGameSummary(pdfText);
+  const summary = await generateGameSummary(pdfText, provider);
 
   // Override game name if provided
   if (providedGameName) {
@@ -181,7 +157,7 @@ export async function generateCompleteGame(
   }
 
   // Stage 2: Generate definition
-  const definition = await generateGameDefinition(pdfText, summary);
+  const definition = await generateGameDefinition(pdfText, summary, provider);
 
   // Override definition metadata name if provided
   if (providedGameName) {
@@ -189,7 +165,7 @@ export async function generateCompleteGame(
   }
 
   // Stage 3: Generate rules
-  const rules = await generateGameRules(pdfText);
+  const rules = await generateGameRules(pdfText, provider);
 
   return { summary, definition, rules };
 }

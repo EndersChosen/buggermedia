@@ -2,7 +2,14 @@ import { pgTable, uuid, varchar, text, integer, timestamp, jsonb, pgEnum } from 
 
 // Enums
 export const gameStatusEnum = pgEnum('game_status', ['processing', 'ready', 'failed']);
-export const uploadStatusEnum = pgEnum('upload_status', ['started', 'pdf_parsed', 'ai_processing', 'completed', 'failed']);
+export const uploadStatusEnum = pgEnum('upload_status', [
+  'started',
+  'pdf_parsed',
+  'ai_processing',
+  'awaiting_review',
+  'completed',
+  'failed',
+]);
 
 // AI Generated Games Table
 export const aiGeneratedGames = pgTable('ai_generated_games', {
@@ -48,6 +55,7 @@ export const uploadLogs = pgTable('upload_logs', {
   status: uploadStatusEnum('status').notNull().default('started'),
   errorMessage: text('error_message'),
   userFingerprint: varchar('user_fingerprint', { length: 100 }),
+  generationMetadata: jsonb('generation_metadata'),
 });
 
 // Type exports

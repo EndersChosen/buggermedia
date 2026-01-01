@@ -10,7 +10,7 @@ export async function POST(request: Request) {
     // Check if this is a text submission or file upload
     if (contentType?.includes('application/json')) {
       // Text-based submission
-      const { rulesText, gameName } = await request.json();
+      const { rulesText, gameName, aiModel } = await request.json();
 
       if (!rulesText || !gameName) {
         return NextResponse.json(
@@ -45,6 +45,8 @@ export async function POST(request: Request) {
           uploadId: uploadLog.id,
           rulesText,
           gameName,
+          aiModel,
+          reviewMode: true,
         }),
       }).catch((error) => {
         console.error('Failed to trigger AI processing:', error);
@@ -60,6 +62,7 @@ export async function POST(request: Request) {
       // File upload
       const formData = await request.formData();
       const file = formData.get('file') as File;
+      const aiModel = formData.get('aiModel') as string | null;
 
       // Validate file
       if (!file) {
@@ -107,6 +110,8 @@ export async function POST(request: Request) {
         body: JSON.stringify({
           uploadId: uploadLog.id,
           pdfUrl: blob.url,
+          aiModel,
+          reviewMode: true,
         }),
       }).catch((error) => {
         console.error('Failed to trigger AI processing:', error);

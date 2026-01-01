@@ -31,16 +31,25 @@ export async function GET(
       started: 10,
       pdf_parsed: 30,
       ai_processing: 60,
+      awaiting_review: 90,
       completed: 100,
       failed: 0,
     };
 
-    const progress = progressMap[log.status] || 0;
+    const progress = progressMap[log.status as keyof typeof progressMap] || 0;
 
-    // If completed, fetch the game slug and completion status
+    // If awaiting review, fetch the game slug from metadata
     let gameSlug: string | null = null;
     let needsCompletion = false;
-    if (log.status === 'completed' && log.gameId) {
+    let needsReview = false;
+
+    if (log.status === 'awaiting_review') {
+      const metadata = log.generationMetadata as any;
+      gameSlug = metadata?.gameSlug || null;
+      needsReview = true;
+      needsCompletion = metadata?.needsCompletion || false;
+    } else if (log.status === 'completed' && log.gameId) {
+      // If completed, fetch the game slug and completion status
       const games = await db
         .select({
           gameSlug: aiGeneratedGames.gameSlug,
@@ -62,6 +71,7 @@ export async function GET(
       progress,
       gameSlug,
       needsCompletion,
+      needsReview,
       error: log.errorMessage || undefined,
     });
   } catch (error) {

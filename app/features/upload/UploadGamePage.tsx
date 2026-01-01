@@ -7,6 +7,7 @@ import { ProcessingStatus } from './components/ProcessingStatus';
 import { useUploadPolling } from './hooks/useUploadPolling';
 import { Button } from '@/components/ui/Button';
 import { ArrowLeft, FileText, Type } from 'lucide-react';
+import { AIModel, getModelDisplayName } from '@/lib/ai/providers';
 
 type UploadState = 'idle' | 'uploading' | 'processing' | 'success' | 'error';
 type InputMethod = 'file' | 'text';
@@ -20,8 +21,9 @@ export function UploadGamePage() {
   const [inputMethod, setInputMethod] = useState<InputMethod>('text');
   const [rulesText, setRulesText] = useState<string>('');
   const [gameName, setGameName] = useState<string>('');
+  const [aiModel, setAiModel] = useState<AIModel>('claude-sonnet-4');
 
-  const { status, progress, gameSlug, needsCompletion } = useUploadPolling(uploadId);
+  const { status, progress, gameSlug, needsCompletion, needsReview } = useUploadPolling(uploadId);
 
   const handleFileSelect = (file: File) => {
     setSelectedFile(file);
@@ -39,6 +41,7 @@ export function UploadGamePage() {
     try {
       const formData = new FormData();
       formData.append('file', selectedFile);
+      formData.append('aiModel', aiModel);
 
       console.log('[Upload] Sending file to server...');
       const response = await fetch('/api/upload', {
@@ -84,6 +87,7 @@ export function UploadGamePage() {
         body: JSON.stringify({
           rulesText: rulesText.trim(),
           gameName: gameName.trim(),
+          aiModel,
         }),
       });
 
@@ -107,7 +111,10 @@ export function UploadGamePage() {
 
   // Update state based on polling status
   if (uploadState === 'processing' && status) {
-    if (status === 'completed' && gameSlug) {
+    if (status === 'awaiting_review' && gameSlug) {
+      console.log('[Upload] 👀 Ready for review. Redirecting to review page...');
+      router.push(`/games/${gameSlug}/review?uploadId=${uploadId}`);
+    } else if (status === 'completed' && gameSlug) {
       if (needsCompletion) {
         console.log('[Upload] ⚠️  Game needs completion. Redirecting to completion page...');
         router.push(`/games/${gameSlug}/complete?uploadId=${uploadId}`);
@@ -225,6 +232,27 @@ export function UploadGamePage() {
                 </p>
               </div>
 
+              {/* AI Model Selector */}
+              <div>
+                <label htmlFor="aiModel" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  AI Model
+                </label>
+                <select
+                  id="aiModel"
+                  value={aiModel}
+                  onChange={(e) => setAiModel(e.target.value as AIModel)}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  disabled={uploadState === 'uploading'}
+                >
+                  <option value="claude-sonnet-4">{getModelDisplayName('claude-sonnet-4')}</option>
+                  <option value="gpt-4o">{getModelDisplayName('gpt-4o')}</option>
+                  <option value="gpt-4o-mini">{getModelDisplayName('gpt-4o-mini')}</option>
+                </select>
+                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                  Choose which AI model to analyze your game rules
+                </p>
+              </div>
+
               <div className="flex justify-center">
                 <Button
                   onClick={handleTextSubmit}
@@ -247,15 +275,38 @@ export function UploadGamePage() {
               />
 
               {selectedFile && (
-                <div className="flex justify-center">
-                  <Button
-                    onClick={handleUpload}
-                    disabled={uploadState === 'uploading'}
-                    size="lg"
-                  >
-                    {uploadState === 'uploading' ? 'Uploading...' : 'Upload & Process'}
-                  </Button>
-                </div>
+                <>
+                  {/* AI Model Selector */}
+                  <div>
+                    <label htmlFor="aiModelFile" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      AI Model
+                    </label>
+                    <select
+                      id="aiModelFile"
+                      value={aiModel}
+                      onChange={(e) => setAiModel(e.target.value as AIModel)}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      disabled={uploadState === 'uploading'}
+                    >
+                      <option value="claude-sonnet-4">{getModelDisplayName('claude-sonnet-4')}</option>
+                      <option value="gpt-4o">{getModelDisplayName('gpt-4o')}</option>
+                      <option value="gpt-4o-mini">{getModelDisplayName('gpt-4o-mini')}</option>
+                    </select>
+                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                      Choose which AI model to analyze your game rules
+                    </p>
+                  </div>
+
+                  <div className="flex justify-center">
+                    <Button
+                      onClick={handleUpload}
+                      disabled={uploadState === 'uploading'}
+                      size="lg"
+                    >
+                      {uploadState === 'uploading' ? 'Uploading...' : 'Upload & Process'}
+                    </Button>
+                  </div>
+                </>
               )}
             </div>
           )}

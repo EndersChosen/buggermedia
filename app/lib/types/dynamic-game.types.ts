@@ -44,6 +44,9 @@ export interface RoundField {
   /** If true, one instance per player. If false, one instance per round. */
   perPlayer: boolean;
 
+  /** If true, one instance per team (for team-based games) */
+  perTeam?: boolean;
+
   /** Validation rules */
   validation?: FieldValidation;
 
@@ -81,6 +84,9 @@ export interface ScoringFormula {
 
   /** When this formula is calculated */
   scope: ScoringScope;
+
+  /** Whether to aggregate scores across team members */
+  aggregateTeam?: boolean;
 
   /** Description of what this formula calculates */
   description?: string;
@@ -121,6 +127,9 @@ export interface WinCondition {
 
   /** Custom JavaScript expression for win check */
   customExpression?: string;
+
+  /** Whether win is determined by individual or team score */
+  unit?: 'individual' | 'team';
 
   /** Description of how to win */
   description: string;
@@ -209,6 +218,12 @@ export interface DynamicGameDefinition {
     description: string;
     minPlayers: number;
     maxPlayers: number;
+    teams?: {
+      enabled: boolean;
+      size: number;
+      count: number;
+      scoringUnit: 'individual' | 'team';
+    };
     version: number;
     generatedBy: 'ai' | 'manual';
     generatedAt?: string;

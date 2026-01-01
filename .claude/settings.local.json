@@ -25,7 +25,10 @@
       "Bash(npx tsc:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(npx drizzle-kit:*)",
+      "Bash(powershell -Command \"Get-Content ''C:\\\\Users\\\\ender\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\e--Programming-buggermedia\\\\tasks\\\\badaafa.output'' -Tail 100\")",
+      "Bash(powershell:*)"
     ]
   }
 }

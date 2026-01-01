@@ -152,9 +152,12 @@ export function validateGameDefinition(definition: DynamicGameDefinition): GameV
     }
 
     // If first-to-target, check for target
-    if (definition.winCondition.type === 'first-to-target' && !definition.winCondition.target) {
+    if (
+      definition.winCondition.type === 'first-to-target' &&
+      !definition.winCondition.targetScore
+    ) {
       issues.push({
-        field: 'winCondition.target',
+        field: 'winCondition.targetScore',
         issue: 'Target score not specified',
         question: 'What score must players reach to win?',
         type: 'number',

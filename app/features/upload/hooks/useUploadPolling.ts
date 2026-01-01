@@ -2,13 +2,20 @@
 
 import { useEffect, useState, useRef } from 'react';
 
-type UploadStatus = 'started' | 'pdf_parsed' | 'ai_processing' | 'completed' | 'failed';
+type UploadStatus =
+  | 'started'
+  | 'pdf_parsed'
+  | 'ai_processing'
+  | 'awaiting_review'
+  | 'completed'
+  | 'failed';
 
 interface UploadStatusResponse {
   status: UploadStatus;
   progress: number;
   gameSlug?: string | null;
   needsCompletion?: boolean;
+  needsReview?: boolean;
   error?: string;
 }
 
@@ -17,6 +24,7 @@ interface UseUploadPollingResult {
   progress: number | null;
   gameSlug: string | null;
   needsCompletion: boolean;
+  needsReview: boolean;
   error: string | null;
   isPolling: boolean;
 }
@@ -28,6 +36,7 @@ export function useUploadPolling(uploadId: string | null): UseUploadPollingResul
   const [progress, setProgress] = useState<number | null>(null);
   const [gameSlug, setGameSlug] = useState<string | null>(null);
   const [needsCompletion, setNeedsCompletion] = useState<boolean>(false);
+  const [needsReview, setNeedsReview] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [isPolling, setIsPolling] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -47,6 +56,7 @@ export function useUploadPolling(uploadId: string | null): UseUploadPollingResul
       setProgress(null);
       setGameSlug(null);
       setNeedsCompletion(false);
+      setNeedsReview(false);
       setError(null);
       setIsPolling(false);
       startTimeRef.current = null;
@@ -79,6 +89,7 @@ export function useUploadPolling(uploadId: string | null): UseUploadPollingResul
             started: '📤 Upload initiated',
             pdf_parsed: '📄 PDF text extracted',
             ai_processing: '🤖 AI generating game definition...',
+            awaiting_review: '👀 Ready for review',
             completed: '✅ Game generation complete!',
             failed: '❌ Processing failed',
           };
@@ -101,10 +112,21 @@ export function useUploadPolling(uploadId: string | null): UseUploadPollingResul
         setProgress(data.progress);
         setGameSlug(data.gameSlug || null);
         setNeedsCompletion(data.needsCompletion || false);
+        setNeedsReview(data.needsReview || false);
         setError(data.error || null);
 
         // Log completion or failure details
-        if (data.status === 'completed') {
+        if (data.status === 'awaiting_review') {
+          console.log(
+            `[Upload Polling] 👀 Ready for review in ${elapsedSec}s`,
+            `Game Slug: ${data.gameSlug}`
+          );
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+          }
+          setIsPolling(false);
+        } else if (data.status === 'completed') {
           console.log(
             `[Upload Polling] ✅ Processing completed in ${elapsedSec}s`,
             `Game Slug: ${data.gameSlug}`
@@ -161,6 +183,7 @@ export function useUploadPolling(uploadId: string | null): UseUploadPollingResul
     progress,
     gameSlug,
     needsCompletion,
+    needsReview,
     error,
     isPolling,
   };

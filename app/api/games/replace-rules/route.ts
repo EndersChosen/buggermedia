@@ -3,7 +3,7 @@ import { db } from '@/lib/db';
 import { aiGeneratedGames, gameDefinitions, uploadLogs } from '@/lib/db/schema';
 import { eq, desc } from 'drizzle-orm';
 import { put } from '@vercel/blob';
-import pdf from 'pdf-parse/lib/pdf-parse';
+import pdf from 'pdf-parse';
 
 export async function POST(request: Request) {
   try {
@@ -11,12 +11,14 @@ export async function POST(request: Request) {
     let gameSlug: string;
     let rulesText: string;
     let gameName: string | null = null;
+    let aiModel: string | null = null;
 
     // Handle file upload
     if (contentType?.includes('multipart/form-data')) {
       const formData = await request.formData();
       const file = formData.get('file') as File;
       gameSlug = formData.get('gameSlug') as string;
+      aiModel = formData.get('aiModel') as string | null;
 
       if (!file || !gameSlug) {
         return NextResponse.json({ error: 'Missing file or gameSlug' }, { status: 400 });
@@ -56,6 +58,7 @@ export async function POST(request: Request) {
       gameSlug = body.gameSlug;
       rulesText = body.rulesText;
       gameName = body.gameName;
+      aiModel = body.aiModel;
 
       if (!gameSlug || !rulesText || !gameName) {
         return NextResponse.json(
@@ -89,6 +92,7 @@ export async function POST(request: Request) {
           rulesText,
           gameName: gameName || game.name,
           existingGameSlug: gameSlug, // Pass this to update existing game instead of creating new
+          aiModel,
         }),
       }
     );

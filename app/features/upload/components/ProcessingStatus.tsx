@@ -2,7 +2,13 @@
 
 import { FileText, Brain, CheckCircle2, AlertCircle } from 'lucide-react';
 
-type ProcessingStage = 'started' | 'pdf_parsed' | 'ai_processing' | 'completed' | 'failed';
+type ProcessingStage =
+  | 'started'
+  | 'pdf_parsed'
+  | 'ai_processing'
+  | 'awaiting_review'
+  | 'completed'
+  | 'failed';
 
 interface ProcessingStatusProps {
   status: ProcessingStage;
@@ -32,6 +38,11 @@ const STAGES: Record<ProcessingStage, StageInfo> = {
     icon: <Brain className="w-6 h-6" />,
     description: 'Our AI is analyzing the rules and generating the game...',
   },
+  awaiting_review: {
+    label: 'Ready for Review',
+    icon: <CheckCircle2 className="w-6 h-6" />,
+    description: 'AI processing complete! Redirecting to review page...',
+  },
   completed: {
     label: 'Complete',
     icon: <CheckCircle2 className="w-6 h-6" />,
@@ -47,7 +58,7 @@ const STAGES: Record<ProcessingStage, StageInfo> = {
 export function ProcessingStatus({ status, progress, errorMessage }: ProcessingStatusProps) {
   const currentStage = STAGES[status];
   const isError = status === 'failed';
-  const isComplete = status === 'completed';
+  const isComplete = status === 'completed' || status === 'awaiting_review';
 
   return (
     <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-8 space-y-6">
@@ -104,6 +115,7 @@ export function ProcessingStatus({ status, progress, errorMessage }: ProcessingS
                   started: 10,
                   pdf_parsed: 30,
                   ai_processing: 60,
+                  awaiting_review: 90,
                 };
 
                 const stageProgress = progressMap[key];

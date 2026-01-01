@@ -20,9 +20,10 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     uploadId = body.uploadId;
-    const { pdfUrl, rulesText, gameName, existingGameSlug } = body;
+    const { pdfUrl, rulesText, gameName, existingGameSlug, reviewMode, aiModel } = body;
 
     // For replace-rules flow, uploadId is optional
+    // For review mode, uploadId is required
     if (!uploadId && !existingGameSlug) {
       return NextResponse.json(
         { error: 'Missing uploadId or existingGameSlug' },
@@ -93,11 +94,21 @@ export async function POST(request: Request) {
     }
 
     // Run AI generation (3-stage pipeline)
-    const { summary, definition, rules } = await generateCompleteGame(extractedText, gameName);
+    const selectedModel = aiModel || 'claude-sonnet-4';
+    console.log(`[AI Process] Using AI model: ${selectedModel}`);
+    const { summary, definition, rules } = await generateCompleteGame(
+      extractedText,
+      gameName,
+      selectedModel
+    );
 
     // Validate AI outputs
     const validation = validateCompleteGame({ summary, definition, rules });
     if (!validation.isValid) {
+      console.error('[AI Process] ❌ Validation failed:', validation.errors);
+      console.error('[AI Process] Summary:', JSON.stringify(summary, null, 2));
+      console.error('[AI Process] Definition metadata:', JSON.stringify(definition.metadata, null, 2));
+
       if (uploadId) {
         await db
           .update(uploadLogs)
@@ -115,11 +126,61 @@ export async function POST(request: Request) {
     }
 
     // Validate the generated definition for completeness
-    const definitionValidation = validateGameDefinition(definition);
+    const definitionValidation = validateGameDefinition(definition as any);
     const gameStatus = definitionValidation.isComplete ? 'ready' : 'processing';
 
     let gameSlug: string;
     let game: any;
+
+    // REVIEW MODE: Store in metadata for user review, don't create database records yet
+    if (reviewMode && uploadId) {
+      // Generate slug for review
+      const baseSlug = slugify(definition.metadata.name, { lower: true, strict: true });
+      gameSlug = baseSlug;
+      let counter = 1;
+
+      // Check for slug conflicts
+      while (true) {
+        const existing = await db
+          .select()
+          .from(aiGeneratedGames)
+          .where(eq(aiGeneratedGames.gameSlug, gameSlug))
+          .limit(1);
+
+        if (existing.length === 0) break;
+
+        gameSlug = `${baseSlug}-${counter}`;
+        counter++;
+      }
+
+      // Store parsed data in upload log metadata for review
+      await db
+        .update(uploadLogs)
+        .set({
+          status: 'awaiting_review',
+          generationMetadata: {
+            parsedDefinition: definition,
+            parsedRules: rules,
+            parsedSummary: summary,
+            originalRulesText: extractedText,
+            gameSlug,
+            pdfUrl,
+            aiModel: selectedModel,
+            generatedAt: new Date().toISOString(),
+            needsCompletion: !definitionValidation.isComplete,
+            validationIssues: definitionValidation.issues,
+          },
+        })
+        .where(eq(uploadLogs.id, uploadId));
+
+      return NextResponse.json({
+        success: true,
+        gameSlug,
+        needsReview: true,
+        needsCompletion: !definitionValidation.isComplete,
+        validationIssues: definitionValidation.issues,
+      });
+    }
 
     // Check if we're updating an existing game or creating a new one
     if (existingGameSlug) {
