@@ -1,0 +1,1 @@
+ALTER TABLE "ai_generated_games" ADD COLUMN "html_scorecard" text;
