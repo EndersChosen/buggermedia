@@ -1,7 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
 
-export type AIModel = 'claude-sonnet-4' | 'gpt-4o' | 'gpt-4o-mini';
+export type AIModel = 'gpt-5.2' | 'claude-sonnet-4.5';
 
 export interface AIProvider {
   generateCompletion(prompt: string): Promise<string>;
@@ -57,7 +57,7 @@ class OpenAIProvider implements AIProvider {
       model: this.model,
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.3,
-      max_tokens: 16000,
+      max_completion_tokens: 16000,
     });
 
     const content = response.choices[0]?.message?.content;
@@ -74,15 +74,13 @@ class OpenAIProvider implements AIProvider {
  */
 export function getAIProvider(model: AIModel): AIProvider {
   switch (model) {
-    case 'claude-sonnet-4':
-      return new AnthropicProvider('claude-sonnet-4-20250514');
-    case 'gpt-4o':
-      return new OpenAIProvider('gpt-4o');
-    case 'gpt-4o-mini':
-      return new OpenAIProvider('gpt-4o-mini');
+    case 'gpt-5.2':
+      return new OpenAIProvider('gpt-5.2');
+    case 'claude-sonnet-4.5':
+      return new AnthropicProvider('claude-sonnet-4-5-20250929');
     default:
-      // Default to Claude
-      return new AnthropicProvider('claude-sonnet-4-20250514');
+      // Default to GPT-5.2
+      return new OpenAIProvider('gpt-5.2');
   }
 }
 
@@ -91,9 +89,8 @@ export function getAIProvider(model: AIModel): AIProvider {
  */
 export function getModelDisplayName(model: AIModel): string {
   const names: Record<AIModel, string> = {
-    'claude-sonnet-4': 'Claude Sonnet 4 (Recommended)',
-    'gpt-4o': 'GPT-4o',
-    'gpt-4o-mini': 'GPT-4o Mini (Faster)',
+    'gpt-5.2': 'GPT-5.2 (Recommended)',
+    'claude-sonnet-4.5': 'Claude Sonnet 4.5',
   };
   return names[model];
 }

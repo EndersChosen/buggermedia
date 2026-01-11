@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { uploadLogs } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
-import { getRefinementPrompt } from '@/lib/ai/prompts';
-import { AIModel, getAIProvider } from '@/lib/ai/providers';
+import { generateHTMLScorecardOnly } from '@/lib/ai/game-generator';
+import { getAIProvider } from '@/lib/ai/providers';
 
 export async function POST(
   request: Request,
@@ -11,130 +11,98 @@ export async function POST(
 ) {
   try {
     const { gameSlug } = await params;
-    const { uploadId, feedback } = await request.json();
+    const body = await request.json();
+    const { uploadId, feedback } = body;
 
-    if (!uploadId || !feedback?.trim()) {
+    if (!uploadId || !feedback) {
       return NextResponse.json(
         { error: 'Missing uploadId or feedback' },
         { status: 400 }
       );
     }
 
-    // Get the upload log with current parsed definition
-    const logs = await db
+    // Fetch upload log with generation metadata
+    const uploads = await db
       .select()
       .from(uploadLogs)
       .where(eq(uploadLogs.id, uploadId))
       .limit(1);
 
-    if (logs.length === 0) {
+    if (uploads.length === 0) {
       return NextResponse.json({ error: 'Upload not found' }, { status: 404 });
     }
 
-    const log = logs[0];
-    const metadata = log.generationMetadata as any;
+    const upload = uploads[0];
+    const metadata = upload.generationMetadata as any;
 
-    if (!metadata?.parsedDefinition || !metadata?.originalRulesText) {
+    if (!metadata || !metadata.originalRulesText) {
       return NextResponse.json(
-        { error: 'Missing parsed definition or original rules' },
-        { status: 404 }
+        { error: 'Original rules text not found' },
+        { status: 400 }
       );
     }
 
-    const currentDefinition = metadata.parsedDefinition;
-    const rulesText = metadata.originalRulesText;
-    const summary = metadata.parsedSummary;
-    const aiModel: AIModel = metadata.aiModel || 'claude-sonnet-4';
+    // Regenerate with feedback appended to the rules
+    const rulesWithFeedback = `${metadata.originalRulesText}\n\nUSER FEEDBACK:\n${feedback}`;
+    const aiModel = metadata.aiModel || 'gpt-5.2';
 
-    console.log('[Refine] 🔄 Refining game definition with user feedback');
-    console.log('[Refine] 📝 Feedback:', feedback);
-    console.log('[Refine] 🤖 Using AI model:', aiModel);
+    console.log('[Refine] Regenerating game with user feedback');
 
-    // Get AI provider and call with refinement prompt
-    const provider = getAIProvider(aiModel);
-    const refinementPrompt = getRefinementPrompt(
-      rulesText,
-      currentDefinition,
-      summary,
-      feedback
+    const { summary, htmlScorecard } = await generateHTMLScorecardOnly(
+      rulesWithFeedback,
+      metadata.parsedSummary?.gameName,
+      aiModel
     );
 
-    const responseText = await provider.generateCompletion(refinementPrompt);
-
-    // Parse the refined definition
-    const jsonMatch = responseText.match(/```json\s*([\s\S]*?)\s*```/);
-    if (!jsonMatch) {
-      throw new Error('Failed to extract JSON from AI response');
-    }
-
-    const refinedDefinition = JSON.parse(jsonMatch[1]);
-
-    console.log('[Refine] ✅ Successfully refined definition');
-    console.log('[Refine] 📊 Updated metadata:', {
-      name: refinedDefinition.metadata?.name,
-      teams: refinedDefinition.metadata?.teams,
-      rounds: refinedDefinition.rounds?.fields?.length,
-    });
-
-    // Update upload log metadata with refined definition
+    // Update metadata with new versions
     await db
       .update(uploadLogs)
       .set({
         generationMetadata: {
           ...metadata,
-          parsedDefinition: refinedDefinition,
-          lastRefinedAt: new Date().toISOString(),
-          refinementHistory: [
-            ...(metadata.refinementHistory || []),
-            {
-              feedback,
-              timestamp: new Date().toISOString(),
-            },
-          ],
+          parsedSummary: summary,
+          parsedHtmlScorecard: htmlScorecard,
+          refinedAt: new Date().toISOString(),
+          userFeedback: feedback,
         },
       })
       .where(eq(uploadLogs.id, uploadId));
 
-    // Return simplified view for display
+    // Return simplified definition for display
+    const simplifiedDefinition = {
+      name: summary.gameName,
+      description: summary.overview,
+      minPlayers: summary.minPlayers,
+      maxPlayers: summary.maxPlayers,
+      rounds: {
+        type: summary.rounds.type,
+        maxRounds: summary.rounds.count,
+        fields: [],
+      },
+      scoring: {
+        formulas: [
+          {
+            name: 'Score Calculation',
+            description: summary.scoringOverview,
+          },
+        ],
+      },
+      winCondition: {
+        type: 'custom',
+        description: summary.winCondition,
+      },
+    };
+
     return NextResponse.json({
       success: true,
-      definition: {
-        name: refinedDefinition.metadata.name,
-        description: refinedDefinition.metadata.description,
-        minPlayers: refinedDefinition.metadata.minPlayers,
-        maxPlayers: refinedDefinition.metadata.maxPlayers,
-        teams: refinedDefinition.metadata.teams,
-        rounds: {
-          type: refinedDefinition.rounds.type,
-          fields: refinedDefinition.rounds.fields.map((f: any) => ({
-            id: f.id,
-            label: f.label,
-            type: f.type,
-            perPlayer: f.perPlayer,
-            perTeam: f.perTeam,
-            helperText: f.helperText,
-          })),
-        },
-        scoring: {
-          formulas: refinedDefinition.scoring.formulas.map((f: any) => ({
-            name: f.name,
-            description: f.description,
-            aggregateTeam: f.aggregateTeam,
-          })),
-        },
-        winCondition: {
-          type: refinedDefinition.winCondition.type,
-          description: refinedDefinition.winCondition.description,
-          unit: refinedDefinition.winCondition.unit,
-        },
-      },
+      definition: simplifiedDefinition,
     });
   } catch (error) {
-    console.error('[Refine] ❌ Error refining game:', error);
+    console.error('Error refining game:', error);
     return NextResponse.json(
       {
-        error:
-          error instanceof Error ? error.message : 'Failed to refine game definition',
+        error: 'Failed to refine game',
+        message: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );

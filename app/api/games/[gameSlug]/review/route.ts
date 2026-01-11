@@ -16,64 +16,58 @@ export async function GET(
       return NextResponse.json({ error: 'Missing uploadId' }, { status: 400 });
     }
 
-    // Get the upload log which contains the parsed definition in metadata
-    const logs = await db
+    // Fetch upload log with generation metadata
+    const uploads = await db
       .select()
       .from(uploadLogs)
       .where(eq(uploadLogs.id, uploadId))
       .limit(1);
 
-    if (logs.length === 0) {
+    if (uploads.length === 0) {
       return NextResponse.json({ error: 'Upload not found' }, { status: 404 });
     }
 
-    const log = logs[0];
-    const metadata = log.generationMetadata as any;
+    const upload = uploads[0];
+    const metadata = upload.generationMetadata as any;
 
-    if (!metadata?.parsedDefinition) {
-      return NextResponse.json(
-        { error: 'No parsed definition found for this upload' },
-        { status: 404 }
-      );
+    if (!metadata) {
+      return NextResponse.json({ error: 'No generation metadata found' }, { status: 404 });
     }
 
-    // Return a simplified view of the definition for review
-    const definition = metadata.parsedDefinition;
+    // Return a simplified definition based on the summary
+    // Since we're using HTML-only generation now, we don't have the full JSON definition
+    const summary = metadata.parsedSummary;
+
+    const simplifiedDefinition = {
+      name: summary.gameName,
+      description: summary.overview,
+      minPlayers: summary.minPlayers,
+      maxPlayers: summary.maxPlayers,
+      rounds: {
+        type: summary.rounds.type,
+        maxRounds: summary.rounds.count,
+        fields: [], // HTML scorecard handles this
+      },
+      scoring: {
+        formulas: [
+          {
+            name: 'Score Calculation',
+            description: summary.scoringOverview,
+          },
+        ],
+      },
+      winCondition: {
+        type: 'custom',
+        description: summary.winCondition,
+      },
+    };
 
     return NextResponse.json({
-      gameSlug,
-      definition: {
-        name: definition.metadata.name,
-        description: definition.metadata.description,
-        minPlayers: definition.metadata.minPlayers,
-        maxPlayers: definition.metadata.maxPlayers,
-        teams: definition.metadata.teams,
-        rounds: {
-          type: definition.rounds.type,
-          maxRounds: definition.rounds.maxRounds,
-          fields: definition.rounds.fields.map((f: any) => ({
-            id: f.id,
-            label: f.label,
-            type: f.type,
-            perPlayer: f.perPlayer,
-            perTeam: f.perTeam,
-          })),
-        },
-        scoring: {
-          formulas: definition.scoring.formulas.map((f: any) => ({
-            name: f.name,
-            description: f.description,
-          })),
-        },
-        winCondition: {
-          type: definition.winCondition.type,
-          description: definition.winCondition.description,
-          targetScore: definition.winCondition.targetScore,
-        },
-      },
+      definition: simplifiedDefinition,
+      hasHtmlScorecard: !!metadata.parsedHtmlScorecard,
     });
   } catch (error) {
-    console.error('Error fetching review data:', error);
+    console.error('Error fetching game review:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

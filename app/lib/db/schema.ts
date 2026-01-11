@@ -21,6 +21,7 @@ export const aiGeneratedGames = pgTable('ai_generated_games', {
   maxPlayers: integer('max_players').notNull(),
   status: gameStatusEnum('status').notNull().default('processing'),
   pdfUrl: text('pdf_url'), // Nullable - text submissions don't have PDFs
+  htmlScorecard: text('html_scorecard'), // AI-generated standalone HTML scorecard
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
   generationMetadata: jsonb('generation_metadata'),

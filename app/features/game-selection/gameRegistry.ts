@@ -1,6 +1,7 @@
 import { GameDefinition, GameType } from '@/types/game.types';
 import { cyaRules } from '@/features/cover-your-assets/cyaRules';
 import { skRules } from '@/features/skull-king/skRules';
+import { spadesRules } from '@/features/spades/spadesRules';
 
 export const GAME_REGISTRY: Record<GameType, GameDefinition> = {
   'cover-your-assets': {
@@ -18,6 +19,14 @@ export const GAME_REGISTRY: Record<GameType, GameDefinition> = {
     minPlayers: 2,
     maxPlayers: 8,
     rules: skRules,
+  },
+  'spades': {
+    id: 'spades',
+    name: 'Spades',
+    description: 'A classic partnership trick-taking game. Bid wisely and avoid bags!',
+    minPlayers: 4,
+    maxPlayers: 4,
+    rules: spadesRules,
   },
 };
 

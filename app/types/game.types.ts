@@ -1,7 +1,7 @@
 import type { DynamicGameSession, DynamicGameDefinition } from '@/lib/types/dynamic-game.types';
 
 // Base types
-export type HardcodedGameType = 'cover-your-assets' | 'skull-king';
+export type HardcodedGameType = 'cover-your-assets' | 'skull-king' | 'spades';
 export type GameType = HardcodedGameType | string; // Support AI-generated games with dynamic slugs
 
 export interface Player {
@@ -64,7 +64,23 @@ export interface SKGameSession extends BaseGameSession {
   currentRound: number; // 1-10
 }
 
-export type GameSession = CYAGameSession | SKGameSession | DynamicGameSession;
+// Spades specific
+export interface SpadesHand {
+  handNumber: number;
+  teamA: { bid: number; tricks: number; score: number };
+  teamB: { bid: number; tricks: number; score: number };
+}
+
+export interface SpadesGameSession extends BaseGameSession {
+  gameType: 'spades';
+  hands: SpadesHand[];
+  totalScoreA: number;
+  totalScoreB: number;
+  bagsA: number;
+  bagsB: number;
+}
+
+export type GameSession = CYAGameSession | SKGameSession | SpadesGameSession | DynamicGameSession;
 
 // Game registry
 export interface GameDefinition {

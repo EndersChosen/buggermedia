@@ -81,11 +81,35 @@ export default function DynamicGamePage() {
   }
 
   return (
-    <DynamicGame
-      gameId={gameId}
-      gameSlug={gameSlug}
-      gameName={gameData.metadata.name}
-      definition={gameData.definition}
-    />
+    <div className="w-full h-screen flex flex-col">
+      {/* Header */}
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => router.push('/')}
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back
+            </Button>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              {gameData.metadata.name}
+            </h1>
+          </div>
+        </div>
+      </div>
+
+      {/* HTML Scorecard in iframe */}
+      <div className="flex-1 relative">
+        <iframe
+          src={`/api/games/${gameSlug}/scorecard`}
+          className="absolute inset-0 w-full h-full border-0"
+          title={`${gameData.metadata.name} Scorecard`}
+          sandbox="allow-scripts allow-same-origin"
+        />
+      </div>
+    </div>
   );
 }

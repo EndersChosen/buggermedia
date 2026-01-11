@@ -28,7 +28,11 @@
       "Bash(git push:*)",
       "Bash(npx drizzle-kit:*)",
       "Bash(powershell -Command \"Get-Content ''C:\\\\Users\\\\ender\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\e--Programming-buggermedia\\\\tasks\\\\badaafa.output'' -Tail 100\")",
-      "Bash(powershell:*)"
+      "Bash(powershell:*)",
+      "Bash(timeout 10 powershell:*)",
+      "Bash(taskkill:*)",
+      "Bash(timeout 15 powershell:*)",
+      "Bash(timeout 20 powershell:*)"
     ]
   }
 }

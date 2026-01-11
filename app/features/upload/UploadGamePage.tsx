@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { FileDropzone } from './components/FileDropzone';
 import { ProcessingStatus } from './components/ProcessingStatus';
@@ -21,7 +21,7 @@ export function UploadGamePage() {
   const [inputMethod, setInputMethod] = useState<InputMethod>('text');
   const [rulesText, setRulesText] = useState<string>('');
   const [gameName, setGameName] = useState<string>('');
-  const [aiModel, setAiModel] = useState<AIModel>('claude-sonnet-4');
+  const [aiModel, setAiModel] = useState<AIModel>('gpt-5.2');
 
   const { status, progress, gameSlug, needsCompletion, needsReview } = useUploadPolling(uploadId);
 
@@ -110,24 +110,26 @@ export function UploadGamePage() {
   };
 
   // Update state based on polling status
-  if (uploadState === 'processing' && status) {
-    if (status === 'awaiting_review' && gameSlug) {
-      console.log('[Upload] 👀 Ready for review. Redirecting to review page...');
-      router.push(`/games/${gameSlug}/review?uploadId=${uploadId}`);
-    } else if (status === 'completed' && gameSlug) {
-      if (needsCompletion) {
-        console.log('[Upload] ⚠️  Game needs completion. Redirecting to completion page...');
-        router.push(`/games/${gameSlug}/complete?uploadId=${uploadId}`);
-      } else {
-        console.log('[Upload] 🎉 Game successfully generated! Slug:', gameSlug);
-        setUploadState('success');
+  useEffect(() => {
+    if (uploadState === 'processing' && status) {
+      if (status === 'awaiting_review' && gameSlug) {
+        console.log('[Upload] 👀 Ready for review. Redirecting to review page...');
+        router.push(`/games/${gameSlug}/review?uploadId=${uploadId}`);
+      } else if (status === 'completed' && gameSlug) {
+        if (needsCompletion) {
+          console.log('[Upload] ⚠️  Game needs completion. Redirecting to completion page...');
+          router.push(`/games/${gameSlug}/complete?uploadId=${uploadId}`);
+        } else {
+          console.log('[Upload] 🎉 Game successfully generated! Slug:', gameSlug);
+          setUploadState('success');
+        }
+      } else if (status === 'failed') {
+        console.error('[Upload] ❌ AI processing failed');
+        setUploadState('error');
+        setErrorMessage('AI processing failed. Please try again.');
       }
-    } else if (status === 'failed') {
-      console.error('[Upload] ❌ AI processing failed');
-      setUploadState('error');
-      setErrorMessage('AI processing failed. Please try again.');
     }
-  }
+  }, [uploadState, status, gameSlug, needsCompletion, uploadId, router]);
 
   const handlePlayGame = () => {
     if (gameSlug) {
@@ -244,9 +246,8 @@ export function UploadGamePage() {
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   disabled={uploadState === 'uploading'}
                 >
-                  <option value="claude-sonnet-4">{getModelDisplayName('claude-sonnet-4')}</option>
-                  <option value="gpt-4o">{getModelDisplayName('gpt-4o')}</option>
-                  <option value="gpt-4o-mini">{getModelDisplayName('gpt-4o-mini')}</option>
+                  <option value="gpt-5.2">{getModelDisplayName('gpt-5.2')}</option>
+                  <option value="claude-sonnet-4.5">{getModelDisplayName('claude-sonnet-4.5')}</option>
                 </select>
                 <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                   Choose which AI model to analyze your game rules
@@ -288,9 +289,8 @@ export function UploadGamePage() {
                       className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       disabled={uploadState === 'uploading'}
                     >
-                      <option value="claude-sonnet-4">{getModelDisplayName('claude-sonnet-4')}</option>
-                      <option value="gpt-4o">{getModelDisplayName('gpt-4o')}</option>
-                      <option value="gpt-4o-mini">{getModelDisplayName('gpt-4o-mini')}</option>
+                      <option value="gpt-5.2">{getModelDisplayName('gpt-5.2')}</option>
+                      <option value="claude-sonnet-4.5">{getModelDisplayName('claude-sonnet-4.5')}</option>
                     </select>
                     <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                       Choose which AI model to analyze your game rules

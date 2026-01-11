@@ -190,9 +190,8 @@ Carefully read the user's feedback and regenerate the complete game definition t
 - Missing game mechanics or fields
 - Incorrect validation rules
 
-IMPORTANT: Respond ONLY with valid JSON in a markdown code block. The structure must match this format:
+IMPORTANT: Respond ONLY with valid JSON. No markdown formatting, no code blocks, no explanation text - just the JSON object. The structure must match this format:
 
-\`\`\`json
 {
   "metadata": {
     "name": "string",
@@ -240,7 +239,6 @@ IMPORTANT: Respond ONLY with valid JSON in a markdown code block. The structure 
     "unit": "individual" | "team"
   }
 }
-\`\`\`
 
 CRITICAL REMINDERS:
 - EVERY field MUST have BOTH perPlayer and perTeam set as boolean values (true or false) - this is required!
@@ -253,6 +251,108 @@ CRITICAL REMINDERS:
 
 Generate the complete, corrected game definition now.`;
 }
+
+/**
+ * Generate standalone HTML scorecard from game rules
+ */
+export const HTML_SCORECARD_PROMPT = `You are an expert at creating interactive score tracking web applications for card games. Generate a complete, standalone HTML scorecard based on the game rules provided.
+
+IMPORTANT: Respond ONLY with valid HTML. No markdown code blocks, no explanation text - just the complete HTML document.
+
+REQUIREMENTS:
+
+1. **Complete HTML Document**
+   - Include <!DOCTYPE html>, <html>, <head>, and <body> tags
+   - Embed all CSS in <style> tags
+   - Embed all JavaScript in <script> tags
+   - Must be completely self-contained (no external dependencies)
+
+2. **Detect Game Type**
+   - Analyze the rules to determine if this is:
+     * Individual scoring (each player tracks their own score)
+     * Team/Partnership scoring (players form teams, scores combine)
+   - Design the UI accordingly
+
+3. **Score Tracking Interface**
+   - Create input fields for all relevant game data (bids, tricks, cards played, etc.)
+   - Display running totals for each player/team
+   - Show current round/hand number
+   - Track any special mechanics (bags, penalties, bonuses, nil bids, etc.)
+
+4. **Auto-Calculation**
+   - Implement scoring logic in JavaScript
+   - Automatically calculate scores when inputs change
+   - Update totals in real-time
+   - Handle all special rules and edge cases
+
+5. **Professional Design**
+   - Clean, modern styling
+   - Responsive table layout
+   - Clear labels and helper text
+   - Easy-to-use inputs (number, checkbox, select as appropriate)
+   - Highlight totals and important information
+
+6. **Game State Management**
+   - "Add Hand/Round" button to add new rows
+   - Preserve all entered data
+   - Track cumulative totals across all rounds
+
+7. **Example Structure** (adapt as needed for the specific game):
+   \`\`\`html
+   <!DOCTYPE html>
+   <html lang="en">
+   <head>
+     <meta charset="UTF-8">
+     <title>[Game Name] Score Card</title>
+     <style>
+       /* Clean, professional CSS */
+     </style>
+   </head>
+   <body>
+     <h1>[Game Name] Score Card</h1>
+     <p>Brief instructions...</p>
+
+     <table id="scoreTable">
+       <thead>
+         <tr>
+           <th>Round</th>
+           <!-- Dynamic headers based on game -->
+         </tr>
+       </thead>
+       <tbody></tbody>
+       <tfoot>
+         <tr>
+           <td>Total</td>
+           <!-- Totals -->
+         </tr>
+       </tfoot>
+     </table>
+
+     <button onclick="addRound()">Add Round</button>
+
+     <script>
+       // Game state
+       // Scoring logic
+       // Auto-calculation
+       // Add round functionality
+     </script>
+   </body>
+   </html>
+   \`\`\`
+
+CRITICAL GUIDELINES:
+
+- **Teams/Partnerships**: If the rules mention "teams", "partnerships", "pairs", or describe players working together, create a team-based scorecard with combined scoring
+- **Scoring Logic**: Implement ALL scoring rules exactly as described, including bonuses, penalties, and special conditions
+- **Special Mechanics**: Track things like bags (Spades), nil bids, penalties for accumulating overtricks, etc.
+- **Input Validation**: Use appropriate input types (number with min/max where applicable)
+- **Calculation Triggers**: Recalculate all scores whenever any input changes
+- **State Preservation**: Use variables to track cumulative state (total scores, bags, penalties applied, etc.)
+
+GAME RULES:
+{{RULES_TEXT}}
+
+Generate the complete HTML scorecard now. Remember: ONLY HTML, no markdown blocks, no explanations.`;
 
 /**
  * Helper to replace placeholders in prompts

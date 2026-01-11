@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { uploadLogs, aiGeneratedGames, gameDefinitions, gameRules } from '@/lib/db/schema';
+import { uploadLogs, aiGeneratedGames } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
+import slugify from 'slugify';
 
 export async function POST(
   request: Request,
@@ -9,81 +10,76 @@ export async function POST(
 ) {
   try {
     const { gameSlug } = await params;
-    const { uploadId } = await request.json();
+    const body = await request.json();
+    const { uploadId } = body;
 
     if (!uploadId) {
       return NextResponse.json({ error: 'Missing uploadId' }, { status: 400 });
     }
 
-    // Get the upload log with the parsed definition
-    const logs = await db
+    // Fetch upload log with generation metadata
+    const uploads = await db
       .select()
       .from(uploadLogs)
       .where(eq(uploadLogs.id, uploadId))
       .limit(1);
 
-    if (logs.length === 0) {
+    if (uploads.length === 0) {
       return NextResponse.json({ error: 'Upload not found' }, { status: 404 });
     }
 
-    const log = logs[0];
-    const metadata = log.generationMetadata as any;
+    const upload = uploads[0];
+    const metadata = upload.generationMetadata as any;
 
-    if (!metadata?.parsedDefinition || !metadata?.parsedRules || !metadata?.parsedSummary) {
+    if (!metadata || !metadata.parsedSummary || !metadata.parsedHtmlScorecard) {
       return NextResponse.json(
-        { error: 'No parsed data found for this upload' },
-        { status: 404 }
+        { error: 'Incomplete generation metadata' },
+        { status: 400 }
       );
     }
 
-    const definition = metadata.parsedDefinition;
-    const rules = metadata.parsedRules;
     const summary = metadata.parsedSummary;
+    const htmlScorecard = metadata.parsedHtmlScorecard;
 
-    // Check if game already exists (in case of refresh/retry)
-    if (log.gameId) {
-      // Game already created, just mark as completed
-      await db
-        .update(uploadLogs)
-        .set({ status: 'completed' })
-        .where(eq(uploadLogs.id, uploadId));
+    // Check for slug conflicts
+    let finalSlug = gameSlug;
+    let counter = 1;
 
-      return NextResponse.json({ success: true, gameSlug });
+    while (true) {
+      const existing = await db
+        .select()
+        .from(aiGeneratedGames)
+        .where(eq(aiGeneratedGames.gameSlug, finalSlug))
+        .limit(1);
+
+      if (existing.length === 0) break;
+
+      const baseSlug = slugify(summary.gameName, { lower: true, strict: true });
+      finalSlug = `${baseSlug}-${counter}`;
+      counter++;
     }
 
-    // Create the game record
+    // Create game record
     const [game] = await db
       .insert(aiGeneratedGames)
       .values({
-        gameSlug,
-        name: definition.metadata.name || summary.gameName,
-        description: definition.metadata.description || summary.overview,
-        minPlayers: definition.metadata.minPlayers || 2,
-        maxPlayers: definition.metadata.maxPlayers || 6,
+        gameSlug: finalSlug,
+        name: summary.gameName,
+        description: summary.overview,
+        minPlayers: summary.minPlayers || 2,
+        maxPlayers: summary.maxPlayers || 6,
         status: 'ready',
-        pdfUrl: metadata.pdfUrl || null,
+        pdfUrl: metadata.pdfUrl,
+        htmlScorecard,
         generationMetadata: {
           summary,
-          generatedAt: new Date().toISOString(),
-          reviewedByUser: true,
+          generatedAt: metadata.generatedAt,
+          aiModel: metadata.aiModel,
         },
       })
       .returning();
 
-    // Store game definition
-    await db.insert(gameDefinitions).values({
-      gameId: game.id,
-      definition,
-      version: 1,
-    });
-
-    // Store game rules
-    await db.insert(gameRules).values({
-      gameId: game.id,
-      rules,
-    });
-
-    // Update upload log to completed
+    // Update upload log status
     await db
       .update(uploadLogs)
       .set({
@@ -94,11 +90,17 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-      gameSlug,
+      gameSlug: finalSlug,
       gameId: game.id,
     });
   } catch (error) {
     console.error('Error approving game:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: 'Failed to approve game',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 }
+    );
   }
 }

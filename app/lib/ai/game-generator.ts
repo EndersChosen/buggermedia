@@ -1,6 +1,24 @@
-import { SUMMARY_PROMPT, getDefinitionPrompt, RULES_PROMPT, fillPrompt } from './prompts';
+import { SUMMARY_PROMPT, getDefinitionPrompt, RULES_PROMPT, HTML_SCORECARD_PROMPT, fillPrompt } from './prompts';
 import { getReferenceSchemaString } from './reference-schema';
 import { AIProvider, getAIProvider, AIModel } from './providers';
+
+/**
+ * Sanitize AI-generated JSON response
+ * - Removes markdown code blocks if present
+ * - Attempts to extract valid JSON
+ */
+function sanitizeJsonResponse(text: string): string {
+  // Remove markdown code blocks if present
+  let sanitized = text.trim();
+
+  // Check for markdown code blocks
+  const codeBlockMatch = sanitized.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+  if (codeBlockMatch) {
+    sanitized = codeBlockMatch[1].trim();
+  }
+
+  return sanitized;
+}
 
 export interface GameSummary {
   gameName: string;
@@ -82,8 +100,10 @@ export async function generateGameSummary(
   const responseText = await provider.generateCompletion(prompt);
 
   try {
-    return JSON.parse(responseText);
+    const sanitized = sanitizeJsonResponse(responseText);
+    return JSON.parse(sanitized);
   } catch (error) {
+    console.error('[Game Generator] Raw summary response:', responseText);
     throw new Error(
       `Failed to parse summary JSON: ${error instanceof Error ? error.message : 'Unknown error'}`
     );
@@ -107,8 +127,10 @@ export async function generateGameDefinition(
   const responseText = await provider.generateCompletion(prompt);
 
   try {
-    return JSON.parse(responseText);
+    const sanitized = sanitizeJsonResponse(responseText);
+    return JSON.parse(sanitized);
   } catch (error) {
+    console.error('[Game Generator] Raw definition response:', responseText);
     throw new Error(
       `Failed to parse definition JSON: ${error instanceof Error ? error.message : 'Unknown error'}`
     );
@@ -126,10 +148,42 @@ export async function generateGameRules(
   const responseText = await provider.generateCompletion(prompt);
 
   try {
-    return JSON.parse(responseText);
+    const sanitized = sanitizeJsonResponse(responseText);
+    return JSON.parse(sanitized);
   } catch (error) {
+    console.error('[Game Generator] Raw rules response:', responseText);
     throw new Error(
       `Failed to parse rules JSON: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
+  }
+}
+
+/**
+ * Generate standalone HTML scorecard from rules text
+ */
+export async function generateHTMLScorecard(
+  rulesText: string,
+  provider: AIProvider
+): Promise<string> {
+  const prompt = fillPrompt(HTML_SCORECARD_PROMPT, { RULES_TEXT: rulesText });
+  const responseText = await provider.generateCompletion(prompt);
+
+  try {
+    // Remove markdown code blocks if AI wrapped the HTML
+    const sanitized = sanitizeJsonResponse(responseText);
+
+    // Validate it's HTML
+    if (!sanitized.trim().toLowerCase().startsWith('<!doctype html')) {
+      console.error('[Game Generator] Response does not start with <!DOCTYPE html>');
+      console.error('[Game Generator] First 200 chars:', sanitized.substring(0, 200));
+      throw new Error('AI did not return valid HTML');
+    }
+
+    return sanitized;
+  } catch (error) {
+    console.error('[Game Generator] Raw HTML response:', responseText);
+    throw new Error(
+      `Failed to generate HTML scorecard: ${error instanceof Error ? error.message : 'Unknown error'}`
     );
   }
 }
@@ -168,4 +222,69 @@ export async function generateCompleteGame(
   const rules = await generateGameRules(pdfText, provider);
 
   return { summary, definition, rules };
+}
+
+/**
+ * New HTML-based pipeline: Rules text → HTML Scorecard + JSON metadata
+ */
+export async function generateGameWithHTML(
+  rulesText: string,
+  providedGameName?: string,
+  aiModel: AIModel = 'gpt-5.2'
+): Promise<{
+  summary: GameSummary;
+  definition: GameDefinition;
+  rules: GameRules;
+  htmlScorecard: string;
+}> {
+  const provider = getAIProvider(aiModel);
+
+  // Generate HTML scorecard
+  const htmlScorecard = await generateHTMLScorecard(rulesText, provider);
+
+  // Also generate the JSON data (for metadata and rules display)
+  const summary = await generateGameSummary(rulesText, provider);
+  if (providedGameName) {
+    summary.gameName = providedGameName;
+  }
+
+  const definition = await generateGameDefinition(rulesText, summary, provider);
+  if (providedGameName) {
+    definition.metadata.name = providedGameName;
+  }
+
+  const rules = await generateGameRules(rulesText, provider);
+
+  return { summary, definition, rules, htmlScorecard };
+}
+
+/**
+ * Fast HTML-only generation: Rules text → HTML Scorecard + minimal summary
+ * Skips definition/rules generation to avoid timeouts
+ */
+export async function generateHTMLScorecardOnly(
+  rulesText: string,
+  providedGameName?: string,
+  aiModel: AIModel = 'gpt-5.2'
+): Promise<{
+  summary: GameSummary;
+  htmlScorecard: string;
+}> {
+  const provider = getAIProvider(aiModel);
+
+  console.log('[Game Generator] 🚀 Starting fast HTML-only generation');
+
+  // Generate HTML scorecard and summary in parallel for speed
+  const [htmlScorecard, summary] = await Promise.all([
+    generateHTMLScorecard(rulesText, provider),
+    generateGameSummary(rulesText, provider),
+  ]);
+
+  if (providedGameName) {
+    summary.gameName = providedGameName;
+  }
+
+  console.log('[Game Generator] ✅ Fast HTML generation complete');
+
+  return { summary, htmlScorecard };
 }

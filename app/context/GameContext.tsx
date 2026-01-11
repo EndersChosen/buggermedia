@@ -7,6 +7,7 @@ import {
   Player,
   CYAGameSession,
   SKGameSession,
+  SpadesGameSession,
   CYAGameMode,
   STORAGE_KEYS,
 } from '@/types/game.types';
@@ -87,6 +88,16 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           totalScores: Object.fromEntries(players.map((p) => [p.id, 0])),
           currentRound: 1,
         } as SKGameSession;
+      } else if (gameType === 'spades') {
+        newGame = {
+          ...baseGame,
+          gameType: 'spades',
+          hands: [],
+          totalScoreA: 0,
+          totalScoreB: 0,
+          bagsA: 0,
+          bagsB: 0,
+        } as SpadesGameSession;
       } else {
         // Dynamic AI-generated game
         if (!options?.dynamicDefinition) {

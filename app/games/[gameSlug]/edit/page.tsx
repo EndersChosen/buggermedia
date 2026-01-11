@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ArrowLeft, Save, AlertCircle, Upload, RefreshCw } from 'lucide-react';
 import type { DynamicGameDefinition } from '@/lib/types/dynamic-game.types';
+import { AIModel, getModelDisplayName } from '@/lib/ai/providers';
 
 interface EditGamePageProps {
   params: Promise<{ gameSlug: string }>;
@@ -47,6 +48,7 @@ export default function EditGamePage({ params }: EditGamePageProps) {
   const [replaceFile, setReplaceFile] = useState<File | null>(null);
   const [replaceText, setReplaceText] = useState('');
   const [replaceName, setReplaceName] = useState('');
+  const [replaceAiModel, setReplaceAiModel] = useState<AIModel>('gpt-5.2');
   const [replacing, setReplacing] = useState(false);
 
   useEffect(() => {
@@ -149,6 +151,7 @@ export default function EditGamePage({ params }: EditGamePageProps) {
         const formData = new FormData();
         formData.append('file', replaceFile!);
         formData.append('gameSlug', gameSlug);
+        formData.append('aiModel', replaceAiModel);
 
         response = await fetch('/api/games/replace-rules', {
           method: 'POST',
@@ -162,6 +165,7 @@ export default function EditGamePage({ params }: EditGamePageProps) {
             gameSlug,
             rulesText: replaceText.trim(),
             gameName: replaceName.trim(),
+            aiModel: replaceAiModel,
           }),
         });
       }
@@ -483,6 +487,25 @@ export default function EditGamePage({ params }: EditGamePageProps) {
                   </p>
                 </div>
 
+                <div>
+                  <label htmlFor="replaceAiModel" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    AI Model
+                  </label>
+                  <select
+                    id="replaceAiModel"
+                    value={replaceAiModel}
+                    onChange={(e) => setReplaceAiModel(e.target.value as AIModel)}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    disabled={replacing}
+                  >
+                    <option value="gpt-5.2">{getModelDisplayName('gpt-5.2')}</option>
+                    <option value="claude-sonnet-4.5">{getModelDisplayName('claude-sonnet-4.5')}</option>
+                  </select>
+                  <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                    Choose which AI model to analyze your game rules
+                  </p>
+                </div>
+
                 <Button
                   onClick={handleReplaceRules}
                   disabled={replacing || !replaceText.trim() || !replaceName.trim()}
@@ -523,6 +546,25 @@ export default function EditGamePage({ params }: EditGamePageProps) {
                       </span>
                     </label>
                   </div>
+                </div>
+
+                <div>
+                  <label htmlFor="replaceAiModelFile" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    AI Model
+                  </label>
+                  <select
+                    id="replaceAiModelFile"
+                    value={replaceAiModel}
+                    onChange={(e) => setReplaceAiModel(e.target.value as AIModel)}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    disabled={replacing}
+                  >
+                    <option value="gpt-5.2">{getModelDisplayName('gpt-5.2')}</option>
+                    <option value="claude-sonnet-4.5">{getModelDisplayName('claude-sonnet-4.5')}</option>
+                  </select>
+                  <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                    Choose which AI model to analyze your game rules
+                  </p>
                 </div>
 
                 {replaceFile && (
