@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { getDb, isDatabaseConfigured } from '@/lib/db';
 import { aiGeneratedGames } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 
@@ -8,6 +8,17 @@ export async function GET(
   { params }: { params: Promise<{ gameSlug: string }> }
 ) {
   try {
+    if (!isDatabaseConfigured()) {
+      return NextResponse.json(
+        {
+          error:
+            'Database not configured. Set POSTGRES_URL / DATABASE_URL to fetch scorecards.',
+        },
+        { status: 503 }
+      );
+    }
+
+    const db = getDb();
     const { gameSlug } = await params;
 
     // Fetch the game from database

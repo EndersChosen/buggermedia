@@ -1,12 +1,21 @@
 import * as dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 
-import { db } from './app/lib/db';
+import { getDb, isDatabaseConfigured } from './app/lib/db';
 import { aiGeneratedGames, uploadLogs } from './app/lib/db/schema';
 import { desc } from 'drizzle-orm';
 
 async function checkGames() {
   try {
+    if (!isDatabaseConfigured()) {
+      console.error(
+        'Database not configured. Set POSTGRES_URL / DATABASE_URL (or POSTGRES_HOST/USER/PASSWORD/DATABASE) in .env.local.'
+      );
+      process.exit(1);
+    }
+
+    const db = getDb();
+
     console.log('\n=== Generated Games ===');
     const games = await db.select().from(aiGeneratedGames);
     console.log('Total:', games.length);

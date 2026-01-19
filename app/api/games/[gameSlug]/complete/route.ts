@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { getDb, isDatabaseConfigured } from '@/lib/db';
 import { aiGeneratedGames, gameDefinitions } from '@/lib/db/schema';
 import { eq, desc } from 'drizzle-orm';
 import { applyCorrections, validateGameDefinition } from '@/lib/ai/game-validator';
@@ -9,6 +9,17 @@ export async function POST(
   { params }: { params: Promise<{ gameSlug: string }> }
 ) {
   try {
+    if (!isDatabaseConfigured()) {
+      return NextResponse.json(
+        {
+          error:
+            'Database not configured. Set POSTGRES_URL / DATABASE_URL to complete games.',
+        },
+        { status: 503 }
+      );
+    }
+
+    const db = getDb();
     const { gameSlug } = await params;
     const { uploadId, corrections } = await request.json();
 

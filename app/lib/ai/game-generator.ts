@@ -194,7 +194,7 @@ export async function generateHTMLScorecard(
 export async function generateCompleteGame(
   pdfText: string,
   providedGameName?: string,
-  aiModel: AIModel = 'claude-sonnet-4'
+  aiModel: AIModel = 'claude-sonnet-4.5'
 ): Promise<{
   summary: GameSummary;
   definition: GameDefinition;

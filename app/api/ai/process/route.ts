@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { getDb, isDatabaseConfigured } from '@/lib/db';
 import { uploadLogs, aiGeneratedGames } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { downloadPDF, extractTextFromPDF, validatePDFText } from '@/lib/ai/pdf-extractor';
@@ -14,6 +14,18 @@ export const maxDuration = 300; // 5 minutes for AI processing
  */
 export async function POST(request: Request) {
   let uploadId: string | undefined;
+
+  if (!isDatabaseConfigured()) {
+    return NextResponse.json(
+      {
+        error:
+          'Database not configured. Set POSTGRES_URL / DATABASE_URL to enable AI processing.',
+      },
+      { status: 503 }
+    );
+  }
+
+  const db = getDb();
 
   try {
     const body = await request.json();

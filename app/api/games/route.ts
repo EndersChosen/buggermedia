@@ -1,11 +1,29 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { getDb, isDatabaseConfigured } from '@/lib/db';
 import { aiGeneratedGames, gameDefinitions, gameRules } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { GAME_REGISTRY } from '@/features/game-selection/gameRegistry';
 
 export async function GET() {
+  // Allow local dev without a database configured.
+  if (!isDatabaseConfigured()) {
+    const hardcoded = Object.values(GAME_REGISTRY).map((game) => ({
+      ...game,
+      source: 'hardcoded' as const,
+    }));
+
+    return NextResponse.json({
+      hardcoded,
+      aiGenerated: [],
+      combined: hardcoded,
+      warning:
+        'Database not configured. Set POSTGRES_URL / DATABASE_URL to enable AI-generated games.',
+    });
+  }
+
   try {
+    const db = getDb();
+
     // Get hardcoded games
     const hardcoded = Object.values(GAME_REGISTRY).map((game) => ({
       ...game,

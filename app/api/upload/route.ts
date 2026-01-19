@@ -1,10 +1,21 @@
 import { NextResponse } from 'next/server';
 import { put } from '@vercel/blob';
-import { db } from '@/lib/db';
+import { getDb, isDatabaseConfigured } from '@/lib/db';
 import { uploadLogs } from '@/lib/db/schema';
 
 export async function POST(request: Request) {
   try {
+    if (!isDatabaseConfigured()) {
+      return NextResponse.json(
+        {
+          error:
+            'Database not configured. Set POSTGRES_URL / DATABASE_URL to enable uploads.',
+        },
+        { status: 503 }
+      );
+    }
+
+    const db = getDb();
     const contentType = request.headers.get('content-type');
 
     // Check if this is a text submission or file upload

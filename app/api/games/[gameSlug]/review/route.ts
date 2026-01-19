@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { getDb, isDatabaseConfigured } from '@/lib/db';
 import { uploadLogs } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 
@@ -8,6 +8,17 @@ export async function GET(
   { params }: { params: Promise<{ gameSlug: string }> }
 ) {
   try {
+    if (!isDatabaseConfigured()) {
+      return NextResponse.json(
+        {
+          error:
+            'Database not configured. Set POSTGRES_URL / DATABASE_URL to review games.',
+        },
+        { status: 503 }
+      );
+    }
+
+    const db = getDb();
     const { gameSlug } = await params;
     const { searchParams } = new URL(request.url);
     const uploadId = searchParams.get('uploadId');

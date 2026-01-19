@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { getDb, isDatabaseConfigured } from '@/lib/db';
 import { aiGeneratedGames, gameDefinitions, uploadLogs } from '@/lib/db/schema';
 import { eq, desc } from 'drizzle-orm';
 import { put } from '@vercel/blob';
@@ -7,6 +7,17 @@ import pdf from 'pdf-parse';
 
 export async function POST(request: Request) {
   try {
+    if (!isDatabaseConfigured()) {
+      return NextResponse.json(
+        {
+          error:
+            'Database not configured. Set POSTGRES_URL / DATABASE_URL to replace rules.',
+        },
+        { status: 503 }
+      );
+    }
+
+    const db = getDb();
     const contentType = request.headers.get('content-type');
     let gameSlug: string;
     let rulesText: string;
