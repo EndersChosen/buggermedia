@@ -23,7 +23,7 @@ export function CYAScoreBoard({ game }: CYAScoreBoardProps) {
 
   const getLeaderId = () => {
     const maxScore = Math.max(...Object.values(game.totalScores));
-    return Object.entries(game.totalScores).find(([_, score]) => score === maxScore)?.[0];
+    return Object.entries(game.totalScores).find(([, score]) => score === maxScore)?.[0];
   };
 
   const toggleRoundExpansion = (roundNumber: number) => {

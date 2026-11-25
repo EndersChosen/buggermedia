@@ -1,19 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { SKGameSession, SKRound, SKBonusDetails } from '@/types/game.types';
 import { useGame } from '@/context/GameContext';
 import { calculateSKRoundScore } from './skCalculations';
 
 export function useSKGame(gameId: string) {
-  const { currentGame, updateGame, completeGame } = useGame();
-  const [game, setGame] = useState<SKGameSession | null>(null);
-
-  useEffect(() => {
-    if (currentGame && currentGame.id === gameId && currentGame.gameType === 'skull-king') {
-      setGame(currentGame as SKGameSession);
-    }
-  }, [currentGame, gameId]);
+  const { activeGames, updateGame, completeGame } = useGame();
+  const found = activeGames.find((g) => g.id === gameId);
+  const game = found && found.gameType === 'skull-king' ? (found as SKGameSession) : null;
 
   const addRound = (
     bids: Record<string, number>,
@@ -187,7 +181,7 @@ export function useSKGame(gameId: string) {
 
     const maxScore = Math.max(...Object.values(game.totalScores));
     const winnerEntry = Object.entries(game.totalScores).find(
-      ([_, score]) => score === maxScore
+      ([, score]) => score === maxScore
     );
 
     if (!winnerEntry) return null;

@@ -39,23 +39,21 @@ export function getAllGames(): GameDefinition[] {
 }
 
 /**
- * Fetches all games including AI-generated ones from the database
+ * Fetches built-in games plus the shared library of AI-generated games.
+ * Never throws: falls back to built-in games with a warning.
  */
-export async function getAllGamesWithAI(): Promise<GameDefinition[]> {
+export async function getAllGamesWithAI(): Promise<{ games: GameDefinition[]; warning?: string }> {
   try {
-    const response = await fetch('/api/games', {
-      cache: 'no-store', // Don't cache so we always get latest games
-    });
-
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 12000);
+    const response = await fetch('/api/games', { cache: 'no-store', signal: controller.signal });
+    clearTimeout(timer);
     if (!response.ok) {
-      console.warn('Failed to fetch AI games, falling back to hardcoded only');
-      return getAllGames();
+      return { games: getAllGames(), warning: 'Shared games could not be loaded.' };
     }
-
     const data = await response.json();
-    return data.combined || getAllGames();
-  } catch (error) {
-    console.error('Error fetching games with AI:', error);
-    return getAllGames();
+    return { games: data.combined || getAllGames(), warning: data.warning };
+  } catch {
+    return { games: getAllGames(), warning: 'Shared games could not be loaded.' };
   }
 }

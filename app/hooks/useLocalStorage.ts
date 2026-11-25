@@ -1,7 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
+/**
+ * State mirrored to localStorage.
+ *
+ * Functional updates are applied to the latest value (not a stale closure), so
+ * several updates in the same tick all land. Storage failures (private mode,
+ * quota exceeded) are logged and the in-memory state still updates.
+ */
 export function useLocalStorage<T>(key: string, initialValue: T) {
   const [storedValue, setStoredValue] = useState<T>(() => {
     if (typeof window === 'undefined') {
@@ -9,24 +16,29 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
     }
     try {
       const item = window.localStorage.getItem(key);
-      return item ? JSON.parse(item) : initialValue;
+      return item ? (JSON.parse(item) as T) : initialValue;
     } catch (error) {
       console.error(`Error loading ${key} from localStorage:`, error);
       return initialValue;
     }
   });
 
-  const setValue = (value: T | ((val: T) => T)) => {
+  const firstRender = useRef(true);
+  useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
     try {
-      const valueToStore = value instanceof Function ? value(storedValue) : value;
-      setStoredValue(valueToStore);
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem(key, JSON.stringify(valueToStore));
-      }
+      window.localStorage.setItem(key, JSON.stringify(storedValue));
     } catch (error) {
       console.error(`Error saving ${key} to localStorage:`, error);
     }
-  };
+  }, [key, storedValue]);
+
+  const setValue = useCallback((value: T | ((val: T) => T)) => {
+    setStoredValue((prev) => (value instanceof Function ? value(prev) : value));
+  }, []);
 
   return [storedValue, setValue] as const;
 }

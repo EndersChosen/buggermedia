@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { SKGameSession, SKRound, SKBonusDetails } from '@/types/game.types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
@@ -61,9 +61,11 @@ export function SKScoreInput({ game, onAddRound, editingRound, onUpdateRound, on
     Object.fromEntries(game.players.map((p) => [p.id, false]))
   );
 
-  // Pre-fill data when editing
-  useEffect(() => {
-    if (editingRound) {
+  // Pre-fill data when a round is opened for editing (adjusting state during render,
+  // rather than in an effect, avoids an extra render pass).
+  const [prefilledRound, setPrefilledRound] = useState<typeof editingRound>(null);
+  if (editingRound && editingRound !== prefilledRound) {
+    setPrefilledRound(editingRound);
       setBids(Object.fromEntries(
         game.players.map((p) => [p.id, String(editingRound.bids[p.id] || 0)])
       ));
@@ -88,8 +90,7 @@ export function SKScoreInput({ game, onAddRound, editingRound, onUpdateRound, on
       // Expand all players and bonuses when editing
       setExpandedPlayers(Object.fromEntries(game.players.map((p) => [p.id, true])));
       setExpandedBonuses(Object.fromEntries(game.players.map((p) => [p.id, true])));
-    }
-  }, [editingRound, game.players]);
+  }
 
   const handleBidChange = (playerId: string, value: string) => {
     if (value === '' || (/^\d+$/.test(value) && parseInt(value) <= game.currentRound)) {

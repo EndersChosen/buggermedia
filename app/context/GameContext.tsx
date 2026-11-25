@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useSyncExternalStore } from 'react';
 import {
   GameSession,
   GameType,
@@ -8,10 +8,12 @@ import {
   CYAGameSession,
   SKGameSession,
   SpadesGameSession,
+  ScoreCardSession,
   CYAGameMode,
   STORAGE_KEYS,
 } from '@/types/game.types';
-import { DynamicGameSession, DynamicGameDefinition } from '@/lib/types/dynamic-game.types';
+import type { ScoreCard } from '@/lib/scorecard/schema';
+import { emptyPlayerValues } from '@/lib/scorecard/engine';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 interface GameContextValue {
@@ -19,11 +21,7 @@ interface GameContextValue {
   activeGames: GameSession[];
   completedGames: GameSession[];
 
-  createGame: (
-    gameType: GameType,
-    players: Player[],
-    options?: CreateGameOptions
-  ) => string;
+  createGame: (gameType: GameType, players: Player[], options?: CreateGameOptions) => string;
   loadGame: (gameId: string) => void;
   updateGame: (gameId: string, updates: Partial<GameSession>) => void;
   completeGame: (gameId: string) => void;
@@ -36,26 +34,27 @@ interface GameContextValue {
 interface CreateGameOptions {
   targetScore?: number;
   gameMode?: CYAGameMode;
-  dynamicDefinition?: DynamicGameDefinition;
+  /** Score card for AI-generated or custom games. */
+  card?: ScoreCard;
 }
 
 const GameContext = createContext<GameContextValue | undefined>(undefined);
 
-export function GameProvider({ children }: { children: React.ReactNode }) {
-  const [mounted, setMounted] = useState(false);
-  const [activeGames, setActiveGames] = useLocalStorage<GameSession[]>(
-    STORAGE_KEYS.ACTIVE_GAMES,
-    []
-  );
-  const [completedGames, setCompletedGames] = useLocalStorage<GameSession[]>(
-    STORAGE_KEYS.COMPLETED_GAMES,
-    []
-  );
-  const [currentGame, setCurrentGame] = useState<GameSession | null>(null);
+const subscribeNoop = () => () => {};
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+export function GameProvider({ children }: { children: React.ReactNode }) {
+  // Render nothing on the server / first client pass so localStorage-backed
+  // state never causes a hydration mismatch.
+  const mounted = useSyncExternalStore(
+    subscribeNoop,
+    () => true,
+    () => false
+  );
+  const [activeGames, setActiveGames] = useLocalStorage<GameSession[]>(STORAGE_KEYS.ACTIVE_GAMES, []);
+  const [completedGames, setCompletedGames] = useLocalStorage<GameSession[]>(STORAGE_KEYS.COMPLETED_GAMES, []);
+  const [currentGameId, setCurrentGameId] = useState<string | null>(null);
+
+  const currentGame = currentGameId ? activeGames.find((g) => g.id === currentGameId) ?? null : null;
 
   const createGame = useCallback(
     (gameType: GameType, players: Player[], options?: CreateGameOptions): string => {
@@ -99,74 +98,49 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           bagsB: 0,
         } as SpadesGameSession;
       } else {
-        // Dynamic AI-generated game
-        if (!options?.dynamicDefinition) {
-          throw new Error(`Dynamic game type "${gameType}" requires a dynamicDefinition in options`);
+        if (!options?.card) {
+          throw new Error(`Game type "${gameType}" needs a score card`);
         }
-
-        const now = new Date();
         newGame = {
-          id: gameId,
-          gameType,
-          players,
-          currentRound: 1,
+          ...baseGame,
+          kind: 'scorecard',
+          card: options.card,
           rounds: [],
-          totalScores: Object.fromEntries(players.map((p) => [p.id, 0])),
-          dynamicDefinition: options.dynamicDefinition,
-          status: players.length === 0 ? 'setup' : 'in-progress', // Setup if no players, otherwise in-progress
-          createdAt: now.toISOString(),
-          updatedAt: now.toISOString(),
-          lastModified: now,
-          startTime: now,
-          isComplete: false,
-        } as DynamicGameSession;
+          sheet: emptyPlayerValues(options.card, players),
+          draft: null,
+        } as ScoreCardSession;
       }
 
       setActiveGames((prev) => [...prev, newGame]);
-      setCurrentGame(newGame);
+      setCurrentGameId(gameId);
       return gameId;
     },
     [setActiveGames]
   );
 
-  const loadGame = useCallback(
-    (gameId: string) => {
-      const game = activeGames.find((g) => g.id === gameId);
-      if (game) {
-        setCurrentGame(game);
-      }
-    },
-    [activeGames]
-  );
+  const loadGame = useCallback((gameId: string) => {
+    setCurrentGameId(gameId);
+  }, []);
 
   const updateGame = useCallback(
     (gameId: string, updates: Partial<GameSession>) => {
-      const updatedGames = activeGames.map((game) =>
-        game.id === gameId
-          ? ({ ...game, ...updates, lastModified: new Date() } as GameSession)
-          : game
+      setActiveGames((prev) =>
+        prev.map((game) =>
+          game.id === gameId ? ({ ...game, ...updates, lastModified: new Date() } as GameSession) : game
+        )
       );
-
-      setActiveGames(updatedGames);
-
-      if (currentGame?.id === gameId) {
-        const updatedGame = updatedGames.find((g) => g.id === gameId);
-        if (updatedGame) {
-          setCurrentGame(updatedGame);
-        }
-      }
     },
-    [activeGames, currentGame, setActiveGames]
+    [setActiveGames]
   );
 
   const completeGame = useCallback(
     (gameId: string) => {
       const game = activeGames.find((g) => g.id === gameId);
       if (game) {
-        const completedGame = { ...game, isComplete: true, lastModified: new Date() };
-        setCompletedGames((prev) => [...prev, completedGame]);
+        const completedGame = { ...game, isComplete: true, lastModified: new Date() } as GameSession;
+        setCompletedGames((prev) => [...prev.filter((g) => g.id !== gameId), completedGame]);
         setActiveGames((prev) => prev.filter((g) => g.id !== gameId));
-        setCurrentGame(null);
+        setCurrentGameId(null);
       }
     },
     [activeGames, setActiveGames, setCompletedGames]
@@ -176,16 +150,13 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     (gameId: string) => {
       setActiveGames((prev) => prev.filter((g) => g.id !== gameId));
       setCompletedGames((prev) => prev.filter((g) => g.id !== gameId));
-
-      if (currentGame?.id === gameId) {
-        setCurrentGame(null);
-      }
+      setCurrentGameId((id) => (id === gameId ? null : id));
     },
-    [currentGame, setActiveGames, setCompletedGames]
+    [setActiveGames, setCompletedGames]
   );
 
   const clearCurrentGame = useCallback(() => {
-    setCurrentGame(null);
+    setCurrentGameId(null);
   }, []);
 
   const exportData = useCallback(() => {
@@ -212,12 +183,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    setCompletedGames((prev) =>
-      prev.filter((game) => new Date(game.lastModified) > thirtyDaysAgo)
-    );
+    setCompletedGames((prev) => prev.filter((game) => new Date(game.lastModified) > thirtyDaysAgo));
   }, [setCompletedGames]);
 
-  // Prevent hydration mismatch by not rendering until mounted
   if (!mounted) {
     return null;
   }

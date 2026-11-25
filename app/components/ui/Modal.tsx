@@ -56,13 +56,16 @@ export function Modal({
     <div className="fixed inset-0 z-50 overflow-y-auto">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 transition-opacity"
+        className="fixed inset-0 bg-black/50 dark:bg-black/70 transition-opacity"
         onClick={onClose}
       />
 
       {/* Modal */}
       <div className="flex min-h-full items-center justify-center p-4">
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={title}
           className={`relative bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full ${sizeClasses[size]} transform transition-all`}
           onClick={(e) => e.stopPropagation()}
         >
@@ -72,6 +75,7 @@ export function Modal({
               <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">{title}</h2>
               <button
                 onClick={onClose}
+                aria-label="Close"
                 className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors"
               >
                 <X className="w-6 h-6" />

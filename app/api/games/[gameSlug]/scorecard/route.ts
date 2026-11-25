@@ -1,54 +1,53 @@
 import { NextResponse } from 'next/server';
+import { eq } from 'drizzle-orm';
 import { getDb, isDatabaseConfigured } from '@/lib/db';
 import { aiGeneratedGames } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ gameSlug: string }> }
-) {
+/**
+ * Serves legacy AI-written HTML score cards.
+ *
+ * That HTML (and its scripts) was written by a model from user-supplied rules,
+ * so it is treated as untrusted: the CSP `sandbox` directive gives it an opaque
+ * origin even if someone opens this URL directly, so it can't read this site's
+ * storage or cookies, and it may not load any external resources.
+ */
+const SANDBOX_CSP = [
+  'sandbox allow-scripts allow-forms',
+  "default-src 'none'",
+  "script-src 'unsafe-inline'",
+  "style-src 'unsafe-inline'",
+  'img-src data:',
+  "font-src 'none'",
+  "connect-src 'none'",
+  "form-action 'none'",
+  "frame-ancestors 'self'",
+].join('; ');
+
+export async function GET(_request: Request, { params }: { params: Promise<{ gameSlug: string }> }) {
+  if (!isDatabaseConfigured()) {
+    return NextResponse.json({ error: 'Shared library unavailable (database not configured).' }, { status: 503 });
+  }
+
   try {
-    if (!isDatabaseConfigured()) {
-      return NextResponse.json(
-        {
-          error:
-            'Database not configured. Set POSTGRES_URL / DATABASE_URL to fetch scorecards.',
-        },
-        { status: 503 }
-      );
-    }
-
     const db = getDb();
     const { gameSlug } = await params;
 
-    // Fetch the game from database
     const games = await db
-      .select({
-        htmlScorecard: aiGeneratedGames.htmlScorecard,
-        name: aiGeneratedGames.name,
-      })
+      .select({ htmlScorecard: aiGeneratedGames.htmlScorecard })
       .from(aiGeneratedGames)
       .where(eq(aiGeneratedGames.gameSlug, gameSlug))
       .limit(1);
 
-    if (games.length === 0) {
-      return NextResponse.json({ error: 'Game not found' }, { status: 404 });
+    if (games.length === 0 || !games[0].htmlScorecard) {
+      return NextResponse.json({ error: 'Score card not found' }, { status: 404 });
     }
 
-    const game = games[0];
-
-    if (!game.htmlScorecard) {
-      return NextResponse.json(
-        { error: 'HTML scorecard not available for this game' },
-        { status: 404 }
-      );
-    }
-
-    // Return the HTML as an HTML response
-    return new NextResponse(game.htmlScorecard, {
+    return new NextResponse(games[0].htmlScorecard, {
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': 'public, max-age=3600', // Cache for 1 hour
+        'Content-Security-Policy': SANDBOX_CSP,
+        'X-Content-Type-Options': 'nosniff',
+        'Cache-Control': 'public, max-age=300',
       },
     });
   } catch (error) {
