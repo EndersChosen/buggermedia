@@ -1,10 +1,10 @@
-import { drizzle } from 'drizzle-orm/vercel-postgres';
+import { drizzle, type VercelPgDatabase } from 'drizzle-orm/vercel-postgres';
 import { createPool } from '@vercel/postgres';
 import type { VercelPool } from '@vercel/postgres';
 import * as schema from './schema';
 
 let pool: VercelPool | undefined;
-let dbInstance: ReturnType<typeof drizzle<typeof schema>> | undefined;
+let dbInstance: VercelPgDatabase<typeof schema> | undefined;
 
 function resolvePostgresConnectionString(): string | undefined {
   if (process.env.POSTGRES_URL) return process.env.POSTGRES_URL;
