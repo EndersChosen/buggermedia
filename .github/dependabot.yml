@@ -1,0 +1,32 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      # Security fixes arrive as one grouped PR.
+      security:
+        applies-to: security-updates
+        patterns: ['*']
+      # Patch and minor bumps arrive as one grouped PR per week.
+      npm-minor-and-patch:
+        applies-to: version-updates
+        patterns: ['*']
+        update-types: [minor, patch]
+      # Majors are grouped too, but kept apart so they can be reviewed on their own.
+      npm-major:
+        applies-to: version-updates
+        patterns: ['*']
+        update-types: [major]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      github-actions:
+        patterns: ['*']

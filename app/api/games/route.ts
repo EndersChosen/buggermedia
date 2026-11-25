@@ -5,7 +5,7 @@ import { getDb, isDatabaseConfigured } from '@/lib/db';
 import { aiGeneratedGames, gameDefinitions } from '@/lib/db/schema';
 import { GAME_REGISTRY } from '@/features/game-selection/gameRegistry';
 import { validateScoreCard } from '@/lib/scorecard/validate';
-import { checkRateLimit, clientKey } from '@/lib/server/rate-limit';
+import { checkRateLimit, clientKey, formatWait, RATE_LIMITS } from '@/lib/server/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -99,9 +99,12 @@ export async function POST(request: Request) {
     );
   }
 
-  const wait = checkRateLimit(`publish:${clientKey(request)}`, 10, 60 * 60 * 1000);
+  const wait = await checkRateLimit(RATE_LIMITS.publish, clientKey(request));
   if (wait > 0) {
-    return NextResponse.json({ error: 'Too many games published from this connection. Try again later.' }, { status: 429 });
+    return NextResponse.json(
+      { error: `Too many games published from this connection. Try again in ${formatWait(wait)}.` },
+      { status: 429, headers: { 'Retry-After': String(wait) } }
+    );
   }
 
   const body = await request.json().catch(() => null);

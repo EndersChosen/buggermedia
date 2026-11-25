@@ -71,13 +71,14 @@ export function SKPlayerBonusInput({
     return total;
   };
 
-  // Update bonuses when initial values change (e.g., when editing a different round)
-  useEffect(() => {
-    if (initialBonusDetails) {
-      setBonuses(initialBonusDetails);
-    } else {
-      // Reset to defaults when starting a new round
-      setBonuses({
+  // Update bonuses when initial values change (e.g., when editing a different round).
+  // Adjusting state during render avoids the extra render pass of a setState-in-effect.
+  const [prevInitialBonusDetails, setPrevInitialBonusDetails] = useState(initialBonusDetails);
+  if (initialBonusDetails !== prevInitialBonusDetails) {
+    setPrevInitialBonusDetails(initialBonusDetails);
+    setBonuses(
+      initialBonusDetails ?? {
+        // Reset to defaults when starting a new round
         yellow14: false,
         purple14: false,
         green14: false,
@@ -86,9 +87,9 @@ export function SKPlayerBonusInput({
         piratesCapturedBySkullKing: 0,
         skullKingCapturedByMermaid: false,
         lootAlliances: [],
-      });
-    }
-  }, [initialBonusDetails]);
+      }
+    );
+  }
 
   useEffect(() => {
     onBonusChange(calculateTotal(bonuses), bonuses);

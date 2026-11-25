@@ -8,11 +8,12 @@ import {
 } from '@/lib/ai/generate';
 import { DEFAULT_MODEL, isModelId, type ModelId } from '@/lib/ai/models';
 import { validateScoreCard } from '@/lib/scorecard/validate';
-import { checkRateLimit, clientKey } from '@/lib/server/rate-limit';
+import { checkRateLimit, clientKey, formatWait, GLOBAL_KEY, RATE_LIMITS } from '@/lib/server/rate-limit';
 import { MAX_RULES_CHARS, MAX_UPLOAD_BYTES } from '@/lib/scorecard/limits';
 
-// Generation can take a minute or two with a long rule book (model call plus up to two repairs).
-export const maxDuration = 300;
+// Measured generations took 6–40 s per model call; with up to two repair calls the worst
+// case seen is about 2 minutes, so 180 s leaves headroom while capping runaway requests.
+export const maxDuration = 180;
 export const dynamic = 'force-dynamic';
 
 const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'] as const;
@@ -41,12 +42,22 @@ function pickModel(value: unknown): ModelId {
   return isModelId(value) ? value : DEFAULT_MODEL;
 }
 
-/** Per-connection AI call budget; only requests that reach the model count. */
-function overLimit(request: Request) {
-  const wait = checkRateLimit(clientKey(request), 20, 60 * 60 * 1000);
-  return wait > 0
-    ? error(`Too many score cards generated from this connection. Try again in ${Math.ceil(wait / 60)} minutes.`, 429)
-    : null;
+function tooMany(message: string, wait: number) {
+  const response = error(`${message} Try again in ${formatWait(wait)}.`, 429);
+  response.headers.set('Retry-After', String(wait));
+  return response;
+}
+
+/**
+ * AI call budget: per connection, then a site-wide daily cap. Only requests that
+ * would reach the model count.
+ */
+async function overLimit(request: Request) {
+  const wait = await checkRateLimit(RATE_LIMITS.generate, clientKey(request));
+  if (wait > 0) return tooMany('Too many score cards generated from this connection.', wait);
+  const globalWait = await checkRateLimit(RATE_LIMITS.generateGlobal, GLOBAL_KEY);
+  if (globalWait > 0) return tooMany('The score card generator has reached its daily limit.', globalWait);
+  return null;
 }
 
 export async function POST(request: Request) {
@@ -93,7 +104,7 @@ export async function POST(request: Request) {
         return error('Add a rule book file or some rules text.', 400);
       }
 
-      const limited = overLimit(request);
+      const limited = await overLimit(request);
       if (limited) return limited;
       const result = await generateScoreCard({ model, gameName, notes, source });
       return NextResponse.json(result);
@@ -107,7 +118,7 @@ export async function POST(request: Request) {
       if (!body.success) return error('Invalid refine request.', 400, body.error.issues.map((i) => i.message));
       const current = validateScoreCard(body.data.card);
       if (!current.card) return error('The current score card is invalid.', 400, current.errors);
-      const limited = overLimit(request);
+      const limited = await overLimit(request);
       if (limited) return limited;
       const result = await refineScoreCard({
         model: pickModel(body.data.model),
@@ -130,7 +141,7 @@ export async function POST(request: Request) {
     if (rulesText.trim().length < 20 && !gameName) {
       return error('Describe how the game is scored (a few sentences is enough), or give the game name.', 400);
     }
-    const limited = overLimit(request);
+    const limited = await overLimit(request);
     if (limited) return limited;
     const result = await generateScoreCard({
       model: pickModel(model),
