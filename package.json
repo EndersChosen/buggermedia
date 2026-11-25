@@ -24,7 +24,7 @@
     "drizzle-orm": "^0.45.4",
     "lucide-react": "^1.80.0",
     "next": "16.4.6",
-    "openai": "^6.15.0",
+    "openai": "^7.64.0",
     "pdfjs-dist": "^6.5.438",
     "react": "19.3.1",
     "react-dom": "19.3.1",
