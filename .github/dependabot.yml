@@ -16,11 +16,23 @@ updates:
         applies-to: version-updates
         patterns: ['*']
         update-types: [minor, patch]
-      # Majors are grouped too, but kept apart so they can be reviewed on their own.
-      npm-major:
-        applies-to: version-updates
-        patterns: ['*']
-        update-types: [major]
+    # Major updates are NOT grouped: each one gets its own PR, so a single
+    # breaking package can't hold up the others.
+    ignore:
+      # Node types must match the runtime (Node 22 on Vercel and in CI).
+      # Raise this when the runtime moves to a newer Node.
+      - dependency-name: '@types/node'
+        versions: ['>=23']
+      # typescript-eslint (used by eslint-config-next) only supports
+      # TypeScript < 6.1, so `npm run lint` crashes on TypeScript 7.
+      # Remove once typescript-eslint supports TypeScript 7.
+      - dependency-name: typescript
+        versions: ['>=7']
+      # eslint-plugin-react, -import and -jsx-a11y (pulled in by
+      # eslint-config-next) don't support ESLint 10 yet, so npm refuses to
+      # install it. Remove once they do.
+      - dependency-name: eslint
+        versions: ['>=10']
 
   - package-ecosystem: github-actions
     directory: /

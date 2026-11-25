@@ -11,9 +11,12 @@ export async function extractPdfText(file: File, onProgress?: (page: number, tot
   pdfjs.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString();
 
   const data = new Uint8Array(await file.arrayBuffer());
-  const doc = await pdfjs.getDocument({ data }).promise;
+  // pdf.js 6 moved teardown from the document to the loading task:
+  // loadingTask.destroy() frees the document and its worker, even if loading failed.
+  const loadingTask = pdfjs.getDocument({ data });
   const pages: string[] = [];
   try {
+    const doc = await loadingTask.promise;
     for (let i = 1; i <= doc.numPages; i++) {
       onProgress?.(i, doc.numPages);
       const page = await doc.getPage(i);
@@ -29,7 +32,7 @@ export async function extractPdfText(file: File, onProgress?: (page: number, tot
       page.cleanup();
     }
   } finally {
-    await doc.destroy();
+    await loadingTask.destroy();
   }
   return pages
     .map((t, i) => `--- Page ${i + 1} ---\n${t}`)
