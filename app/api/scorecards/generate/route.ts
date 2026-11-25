@@ -41,12 +41,15 @@ function pickModel(value: unknown): ModelId {
   return isModelId(value) ? value : DEFAULT_MODEL;
 }
 
-export async function POST(request: Request) {
-  const wait = checkRateLimit(clientKey(request), 12, 60 * 60 * 1000);
-  if (wait > 0) {
-    return error(`Too many score cards generated from this connection. Try again in ${Math.ceil(wait / 60)} minutes.`, 429);
-  }
+/** Per-connection AI call budget; only requests that reach the model count. */
+function overLimit(request: Request) {
+  const wait = checkRateLimit(clientKey(request), 20, 60 * 60 * 1000);
+  return wait > 0
+    ? error(`Too many score cards generated from this connection. Try again in ${Math.ceil(wait / 60)} minutes.`, 429)
+    : null;
+}
 
+export async function POST(request: Request) {
   try {
     const contentType = request.headers.get('content-type') ?? '';
 
@@ -90,6 +93,8 @@ export async function POST(request: Request) {
         return error('Add a rule book file or some rules text.', 400);
       }
 
+      const limited = overLimit(request);
+      if (limited) return limited;
       const result = await generateScoreCard({ model, gameName, notes, source });
       return NextResponse.json(result);
     }
@@ -102,6 +107,8 @@ export async function POST(request: Request) {
       if (!body.success) return error('Invalid refine request.', 400, body.error.issues.map((i) => i.message));
       const current = validateScoreCard(body.data.card);
       if (!current.card) return error('The current score card is invalid.', 400, current.errors);
+      const limited = overLimit(request);
+      if (limited) return limited;
       const result = await refineScoreCard({
         model: pickModel(body.data.model),
         card: current.card,
@@ -123,6 +130,8 @@ export async function POST(request: Request) {
     if (rulesText.trim().length < 20 && !gameName) {
       return error('Describe how the game is scored (a few sentences is enough), or give the game name.', 400);
     }
+    const limited = overLimit(request);
+    if (limited) return limited;
     const result = await generateScoreCard({
       model: pickModel(model),
       gameName: gameName?.trim() || undefined,

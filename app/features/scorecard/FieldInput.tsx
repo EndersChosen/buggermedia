@@ -57,6 +57,10 @@ export function FieldInput({ field, value, onChange, max, invalid, ariaLabel, co
 
   const step = field.step ?? 1;
   const min = field.min;
+  // On phones the score sheet is tight: drop the +/- buttons when the number
+  // keypad is enough (non-negative values). Phone keypads often lack a minus
+  // key, so fields that allow negatives keep them.
+  const hideSteppers = compact && min !== null && min >= 0;
   const clamp = (n: number) => {
     let v = n;
     if (min !== null) v = Math.max(min, v);
@@ -75,7 +79,7 @@ export function FieldInput({ field, value, onChange, max, invalid, ariaLabel, co
         tabIndex={-1}
         aria-label={`Decrease ${ariaLabel}`}
         onClick={() => bump(-1)}
-        className="px-2 rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+        className={`${hideSteppers ? 'hidden sm:block' : ''} px-2 rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600`}
       >
         <Minus className="w-3.5 h-3.5" />
       </button>
@@ -100,7 +104,7 @@ export function FieldInput({ field, value, onChange, max, invalid, ariaLabel, co
         tabIndex={-1}
         aria-label={`Increase ${ariaLabel}`}
         onClick={() => bump(1)}
-        className="px-2 rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+        className={`${hideSteppers ? 'hidden sm:block' : ''} px-2 rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600`}
       >
         <Plus className="w-3.5 h-3.5" />
       </button>

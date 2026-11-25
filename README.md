@@ -1,159 +1,63 @@
 # Card Game Score Tracker
 
-A modern, feature-rich web application for tracking scores in popular card games. Built with React, TypeScript, and Tailwind CSS.
+Score keeping for tabletop games at [cards.buggermedia.com](https://cards.buggermedia.com). It ships hand-built trackers for Skull King, Cover Your Assets and Spades, and an AI score card creator for everything else: describe a game's scoring or upload its rule book, review the generated score card, and play.
 
-## Features
+Built with Next.js 16 (App Router), React 19, TypeScript and Tailwind CSS 4. Deployed on Vercel from `main`.
 
-- **Multiple Games**: Currently supports Cover Your Assets and Skull King
-- **Smart Score Tracking**: Automatic calculations and running totals
-- **Game Persistence**: All games saved to localStorage
-- **Resume Capability**: Pick up where you left off
-- **Rules Reference**: Built-in rules for each game
-- **Responsive Design**: Works on desktop, tablet, and mobile
-- **Beautiful UI**: Modern design with Tailwind CSS
+## How the AI score cards work
 
-## Supported Games
+1. **Input** (`/create`): a typed description or pasted rules, or a rule book file. PDFs and images up to 4 MB are sent to the model as-is (so tables and scanned pages work). Text/Markdown files, and PDFs too large to upload, are read in the browser with pdf.js and sent as text.
+2. **Generation** (`POST /api/scorecards/generate`): one synchronous request. The model returns a JSON **score card** (schema in `app/lib/scorecard/schema.ts`); the server validates it and, if anything is wrong, sends the errors back to the model to fix (up to 3 attempts).
+3. **Review**: the person tries the card with sample players, edits anything by hand, or asks the AI for changes, then saves it to their browser and optionally publishes it to the shared library (Postgres).
+4. **Play**: a deterministic engine scores the card. No model-written code ever runs.
 
-### Cover Your Assets
-- 2-6 players
-- Race to $1,000,000
-- Simple cumulative scoring
-- Winner detection
+### Score card schema
 
-### Skull King
-- 2-6 players
-- 10 rounds of trick-taking
-- Bid prediction gameplay
-- Complex scoring with bonuses
-- Automatic score calculation
+- `layout: "rounds"` — the same inputs every round (Hearts, Oh Hell, Rummy…). `roundScore` is an expression for one player's points that round; `roundChecks` sanity-check a round across players.
+- `layout: "categories"` — a one-off sheet (Yahtzee, Ticket to Ride…). Each field is a row worth points (`scoreExpression` converts counts into points); `bonuses` are computed rows.
+- `end`: fixed rounds (or a formula on player count), first to a target score, manual, or sheet complete. `winner`: highest or lowest.
+- `examples`: worked examples from the rules (inputs and expected points). Validation replays them through the formulas, which catches logic mistakes the schema can't.
 
-## Tech Stack
+Expressions use a small, safe language (`app/lib/scorecard/expression.ts`): numbers, arithmetic, comparisons, `&& || !`, `?:`, `min/max/abs/floor/ceil/round/clamp/if`, and cross-player aggregates `sumAll/maxAll/minAll/countAll/rankOf` whose argument is evaluated per player (e.g. `countAll(tricks == bid)`).
 
-- **Frontend**: React 18 + TypeScript
-- **Build Tool**: Vite
-- **Styling**: Tailwind CSS
-- **Routing**: React Router v6
-- **Icons**: Lucide React
-- **State Management**: React Context API
-- **Persistence**: Browser localStorage
+## Development
 
-## Getting Started
-
-### Prerequisites
-
-- Node.js 18+ and npm
-
-### Installation
-
-1. Clone the repository:
-```bash
-git clone <your-repo-url>
-cd buggermedia
-```
-
-2. Install dependencies:
 ```bash
 npm install
-```
-
-3. Start the development server:
-```bash
-npm run dev
-```
-
-4. Open your browser to `http://localhost:5173`
-
-### Build for Production
-
-```bash
+npm run dev        # http://localhost:3000
+npm test           # Vitest: expression language, engine, validator
+npm run lint
 npm run build
 ```
 
-The production build will be in the `dist` folder.
+### Environment variables (`.env.local`)
 
-### Preview Production Build
+| Variable | Used for |
+| --- | --- |
+| `ANTHROPIC_API_KEY` | Claude models (default: Claude Opus 5.5) |
+| `OPENAI_API_KEY` | Optional GPT-5.2 option |
+| `POSTGRES_URL` / `DATABASE_URL` | Shared library of published score cards (optional; without it cards are saved per browser only) |
 
-```bash
-npm run preview
-```
+**Careful:** if `.env.local` points at the production database, local runs read and write the live shared library. To test locally without it, add a `.env.development.local` with empty `POSTGRES_URL=`, `DATABASE_URL=`, `POSTGRES_HOST=`, `POSTGRES_USER=`, `POSTGRES_PASSWORD=` and `POSTGRES_DATABASE=` lines.
 
-## How to Use
-
-### Starting a New Game
-
-1. Click on a game card from the home page
-2. Enter player names (2-6 players depending on the game)
-3. Click "Start Game"
-
-### Playing a Game
-
-**Cover Your Assets:**
-- Enter dollar amounts for each player each round
-- First to $1,000,000 wins
-
-**Skull King:**
-- Round 1: Enter bids (predictions)
-- Round 2: Enter actual tricks won
-- Round 3: Enter bonus points (optional)
-- Repeat for all 10 rounds
-
-### Managing Games
-
-- **Continue**: Resume any active game from the home page
-- **Delete**: Remove games you're done with
-- **View Rules**: Access game rules anytime during play
-- **End Game**: Complete and save a game to history
-
-## Project Structure
+## Project structure
 
 ```
-src/
-├── @types/           # TypeScript type definitions
-├── components/       # Reusable UI components
-│   ├── ui/          # Basic UI elements
-│   └── layout/      # Layout components
-├── features/        # Feature-based modules
-│   ├── game-selection/
-│   ├── cover-your-assets/
-│   ├── skull-king/
-│   └── rules/
-├── hooks/           # Custom React hooks
-├── context/         # React Context providers
-├── utils/           # Utility functions
-└── pages/           # Page components
+app/
+  api/scorecards/generate   AI generation endpoint (create + refine)
+  api/scorecards/models     Which AI models are configured
+  api/games                 Shared library: list (GET) and publish (POST)
+  create/                   Create / review / edit page
+  game/[gameSlug]/[gameId]  Play a score card game (and legacy HTML cards)
+  features/scorecard/       Score card UI: play, editor, rules panel
+  features/create/          Create flow, in-browser PDF text extraction
+  lib/scorecard/            Schema, expression language, engine, validator (+ tests)
+  lib/ai/                   Prompts, model list, generation with repair loop
+  features/skull-king, cover-your-assets, spades   Hand-built trackers
 ```
 
-## Adding New Games
-
-The app is designed to be extensible. To add a new game:
-
-1. Define game types in `src/@types/game.types.ts`
-2. Create feature folder `src/features/your-game/`
-3. Implement game components and logic
-4. Add to game registry `src/features/game-selection/gameRegistry.ts`
-5. Add route in `src/App.tsx`
-
-## Browser Support
-
-- Chrome/Edge (latest 2 versions)
-- Firefox (latest 2 versions)
-- Safari (latest 2 versions)
-
-## Data Storage
-
-All game data is stored in your browser's localStorage:
-- `cardgames:active` - Active games
-- `cardgames:completed` - Completed games
-- `cardgames:settings` - App settings
-
-**Note**: Clearing browser data will delete all saved games.
+Game sessions and personal score cards are stored in the browser's localStorage (`cardgames:active`, `cardgames:completed`, `cardgames:customCards`).
 
 ## License
 
-MIT License - See LICENSE file for details
-
-## Acknowledgments
-
-- Game rules from official sources
-- Icons by Lucide
-- UI inspiration from modern web design patterns
+MIT License - see LICENSE.

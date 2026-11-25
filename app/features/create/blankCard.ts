@@ -17,6 +17,7 @@ export function blankCard(name = 'My game'): ScoreCard {
     bonuses: [],
     end: { type: 'manual', rounds: null, roundsExpression: null, target: null },
     winner: 'highest',
+    examples: [],
     rules: { overview: '', scoring: ['Add up each round\'s points.'], winning: 'Highest total wins.', assumptions: [] },
   };
 }

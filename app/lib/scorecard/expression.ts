@@ -52,9 +52,9 @@ const SCALAR_FUNCTIONS: Record<string, { min: number; max: number; fn: (...a: nu
 };
 
 /**
- * Functions that look across every player's value for one field in the
- * current round (rounds-style cards only). Their single argument must be a
- * bare field identifier, e.g. `maxAll(points)`.
+ * Functions that look across every player in the current round (rounds-style
+ * cards only). The argument is evaluated once per player with that player's
+ * values, e.g. `maxAll(points)` or `maxAll(hearts + 13 * queen)`.
  */
 export const AGGREGATE_FUNCTIONS = ['sumAll', 'maxAll', 'minAll', 'countAll', 'rankOf'] as const;
 export type AggregateFunction = (typeof AGGREGATE_FUNCTIONS)[number];
@@ -271,8 +271,11 @@ export function parseExpression(source: string): Expr {
 
   function checkCall(name: string, args: Expr[], at: number): Expr {
     if (AGGREGATES.has(name)) {
-      if (args.length !== 1 || args[0].kind !== 'id') {
-        throw new ExpressionError(`${name}() takes exactly one field name, e.g. ${name}(points)`);
+      if (args.length !== 1) {
+        throw new ExpressionError(`${name}() takes exactly one argument, e.g. ${name}(points)`);
+      }
+      if (usesAggregates(args[0])) {
+        throw new ExpressionError(`${name}() can't contain another aggregate function`);
       }
       return { kind: 'call', name, args };
     }
@@ -349,12 +352,10 @@ export interface EvalScope {
   /** Values of plain identifiers (fields, `round`, `players`, ...). */
   vars: Record<string, number>;
   /**
-   * For aggregate functions: every player's value of a field, in player order.
-   * Only available on rounds-style cards.
+   * For aggregate functions: every player's identifier values, in player
+   * order. Only available on rounds-style cards.
    */
-  allValues?: (fieldId: string) => number[] | undefined;
-  /** The value the current player has for a field (used by rankOf). */
-  ownValue?: (fieldId: string) => number | undefined;
+  perPlayer?: Array<Record<string, number>>;
 }
 
 export function evaluate(expr: Expr, scope: EvalScope): number {
@@ -419,11 +420,11 @@ function evalNode(expr: Expr, scope: EvalScope): number {
     }
     case 'call': {
       if (AGGREGATES.has(expr.name)) {
-        const fieldId = (expr.args[0] as { name: string }).name;
-        const values = scope.allValues?.(fieldId);
-        if (!values) {
-          throw new ExpressionError(`${expr.name}(${fieldId}) is not available here`);
+        const arg = expr.args[0];
+        if (!scope.perPlayer) {
+          throw new ExpressionError(`${expr.name}() is only available on rounds score cards`);
         }
+        const values = scope.perPlayer.map((vars) => evalNode(arg, { vars }));
         switch (expr.name as AggregateFunction) {
           case 'sumAll':
             return values.reduce((s, v) => s + v, 0);
@@ -435,8 +436,7 @@ function evalNode(expr: Expr, scope: EvalScope): number {
             return values.filter((v) => v !== 0).length;
           case 'rankOf': {
             // 1 = highest value. Ties share the better rank.
-            const own = scope.ownValue?.(fieldId);
-            if (own === undefined) throw new ExpressionError(`rankOf(${fieldId}) is not available here`);
+            const own = evalNode(arg, { vars: scope.vars });
             return 1 + values.filter((v) => v > own).length;
           }
         }

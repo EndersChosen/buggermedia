@@ -113,4 +113,95 @@ describe('validateScoreCard', () => {
     const { errors } = validateScoreCard(card);
     expect(errors.join()).toMatch(/dry run: .*Division by zero/);
   });
+
+  it('replays worked examples and reports mismatches', () => {
+    const card = clone(heartsCard);
+    card.examples = [
+      {
+        description: 'Normal hand',
+        round: null,
+        players: [
+          { values: [{ field: 'points', value: 13 }], expected: 13 },
+          { values: [{ field: 'points', value: 13 }], expected: 13 },
+          { values: [{ field: 'points', value: 0 }], expected: 0 },
+        ],
+      },
+      {
+        description: 'Moon shot',
+        round: 2,
+        players: [
+          { values: [{ field: 'points', value: 26 }], expected: 0 },
+          { values: [], expected: 26 },
+          { values: [], expected: 26 },
+        ],
+      },
+    ];
+    expect(validateScoreCard(card).errors).toEqual([]);
+
+    card.examples[1].players[0].expected = 26;
+    const { errors } = validateScoreCard(card);
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toMatch(/Moon shot.*player 1 should get 26 but the formulas give 0/);
+  });
+
+  it('catches the "same player" shoot-the-moon bug through examples', () => {
+    // A formula that only looks at maxima can't tell whether one player took
+    // both the hearts and the queen; an example exposes it.
+    const card = clone(heartsCard);
+    card.fields = [
+      { ...card.fields[0], id: 'hearts', label: 'Hearts', max: 13 },
+      { ...card.fields[0], id: 'queen', label: 'Queen of spades', type: 'boolean', min: null, max: null },
+    ];
+    card.roundChecks = [];
+    card.roundScore = 'maxAll(hearts) == 13 && sumAll(queen) == 1 ? ((hearts == 13 && queen == 1) ? 0 : 26) : hearts + 13 * queen';
+    card.examples = [
+      {
+        description: 'Hearts and queen split',
+        round: null,
+        players: [
+          { values: [{ field: 'hearts', value: 13 }], expected: 13 },
+          { values: [{ field: 'queen', value: 1 }], expected: 13 },
+          { values: [], expected: 0 },
+        ],
+      },
+    ];
+    expect(validateScoreCard(card).ok).toBe(false);
+
+    card.roundScore = 'maxAll(hearts + 13 * queen) == 26 ? (hearts + 13 * queen == 26 ? 0 : 26) : hearts + 13 * queen';
+    expect(validateScoreCard(card).errors).toEqual([]);
+  });
+
+  it('checks category examples against totals', () => {
+    const card = clone(ticketToRideCard);
+    card.examples = [
+      {
+        description: 'Typical end of game',
+        round: null,
+        players: [
+          { values: [{ field: 'len6', value: 1 }, { field: 'tickets_failed', value: 5 }, { field: 'longest', value: 1 }], expected: 20 },
+          { values: [{ field: 'len3', value: 2 }], expected: 8 },
+        ],
+      },
+    ];
+    expect(validateScoreCard(card).errors).toEqual([]);
+    card.examples[0].players[1].values.push({ field: 'nope', value: 1 });
+    expect(validateScoreCard(card).errors.join()).toMatch(/unknown field "nope"/);
+  });
+
+  it('fills omitted nullable properties (relaxed structured output)', () => {
+    const card = clone(biddingCard) as unknown as Record<string, unknown>;
+    const fields = (card.fields as Array<Record<string, unknown>>).map((f) => {
+      const copy = { ...f };
+      for (const k of Object.keys(copy)) if (copy[k] === null) delete copy[k];
+      return copy;
+    });
+    card.fields = fields;
+    delete card.roundChecks;
+    delete card.examples;
+    delete (card.end as Record<string, unknown>).target;
+    const result = validateScoreCard(card);
+    expect(result.errors).toEqual([]);
+    expect(result.card?.fields[0].helpText).toBeNull();
+    expect(result.card?.examples).toEqual([]);
+  });
 });

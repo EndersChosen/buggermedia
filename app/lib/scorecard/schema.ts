@@ -125,6 +125,31 @@ export const RulesSummarySchema = z
   })
   .strict();
 
+export const ExampleSchema = z
+  .object({
+    description: z.string().describe('What situation this example checks, e.g. "One player shoots the moon"'),
+    round: z
+      .number()
+      .int()
+      .nullable()
+      .describe('Rounds layout: the round number this example is played in (null means round 1)'),
+    players: z
+      .array(
+        z
+          .object({
+            values: z
+              .array(z.object({ field: z.string(), value: z.number() }).strict())
+              .describe("This player's inputs (field id and value). Omitted fields use their default."),
+            expected: z
+              .number()
+              .describe("Rounds layout: this player's points for the round. Categories layout: this player's total."),
+          })
+          .strict()
+      )
+      .describe('Every player in the example, in seat order'),
+  })
+  .strict();
+
 export const ScoreCardSchema = z
   .object({
     schemaVersion: z.literal(SCORECARD_SCHEMA_VERSION),
@@ -152,6 +177,11 @@ export const ScoreCardSchema = z
       .describe('Categories layout: computed bonus rows. Empty if none (always empty for rounds).'),
     end: EndConditionSchema,
     winner: z.enum(['highest', 'lowest']).describe('Whether the highest or lowest total wins'),
+    examples: z
+      .array(ExampleSchema)
+      .describe(
+        'Worked examples with the points each player should get according to the rules, computed by hand from the rules (not from your formulas). 2-4 examples covering normal play and the tricky cases. The app checks the formulas reproduce them.'
+      ),
     rules: RulesSummarySchema,
   })
   .strict();
@@ -163,6 +193,7 @@ export type Bonus = z.infer<typeof BonusSchema>;
 export type EndCondition = z.infer<typeof EndConditionSchema>;
 export type RulesSummary = z.infer<typeof RulesSummarySchema>;
 export type ScoreCard = z.infer<typeof ScoreCardSchema>;
+export type ScoreExample = z.infer<typeof ExampleSchema>;
 
 /** Names that every rounds-style expression can read. */
 export const ROUND_CONTEXT_NAMES = ['round', 'players', 'total', 'playerIndex'] as const;
@@ -192,4 +223,39 @@ export function emptyField(id: string): ScoreField {
     options: null,
     scoreExpression: null,
   };
+}
+
+/**
+ * Fill in properties that are allowed to be null but were left out.
+ *
+ * Some structured-output modes can only handle the schema with those
+ * properties made optional, so the model may omit them; the app's types expect
+ * explicit nulls/empty lists.
+ */
+export function fillOmittedNulls(input: unknown): unknown {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return input;
+  const card = { ...(input as Record<string, unknown>) };
+  const fill = (obj: unknown, keys: string[]) => {
+    if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return obj;
+    const copy = { ...(obj as Record<string, unknown>) };
+    for (const k of keys) if (!(k in copy)) copy[k] = null;
+    return copy;
+  };
+  const fieldKeys = ['section', 'helpText', 'min', 'max', 'maxExpression', 'step', 'defaultValue', 'points', 'options', 'scoreExpression'];
+  if (!('roundLabel' in card)) card.roundLabel = null;
+  if (!('roundScore' in card)) card.roundScore = null;
+  if (!('roundChecks' in card)) card.roundChecks = [];
+  if (!('bonuses' in card)) card.bonuses = [];
+  if (!('examples' in card)) card.examples = [];
+  if (Array.isArray(card.examples)) card.examples = card.examples.map((e) => fill(e, ['round']));
+  if (Array.isArray(card.fields)) card.fields = card.fields.map((f) => fill(f, fieldKeys));
+  if (Array.isArray(card.bonuses)) card.bonuses = card.bonuses.map((b) => fill(b, ['helpText']));
+  card.end = fill(card.end, ['rounds', 'roundsExpression', 'target']);
+  if (card.rules && typeof card.rules === 'object' && !Array.isArray(card.rules)) {
+    const rules = { ...(card.rules as Record<string, unknown>) };
+    if (!('assumptions' in rules)) rules.assumptions = [];
+    if (!('scoring' in rules)) rules.scoring = [];
+    card.rules = rules;
+  }
+  return card;
 }

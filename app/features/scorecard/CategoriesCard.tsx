@@ -63,11 +63,11 @@ export function CategoriesCard({ card, players, sheet, onChange, onFinish }: Cat
         <table className="w-full text-sm border-collapse">
           <thead>
             <tr className="bg-gray-50 dark:bg-gray-900/40 text-gray-600 dark:text-gray-300">
-              <th className="px-3 py-2 text-left font-medium sticky left-0 z-10 bg-gray-50 dark:bg-gray-900 min-w-[9rem]">
+              <th className="px-3 py-2 text-left font-medium sticky left-0 z-10 bg-gray-50 dark:bg-gray-900 min-w-[7.5rem] sm:min-w-[9rem]">
                 Category
               </th>
               {players.map((p) => (
-                <th key={p.id} className="px-2 py-2 text-center font-medium min-w-[8.5rem]">
+                <th key={p.id} className="px-2 py-2 text-center font-medium min-w-[4.5rem] sm:min-w-[8.5rem]">
                   <span className="block truncate">{p.name}</span>
                   <span className="block text-xs font-normal text-gray-500">
                     {filledCount(card, sheet[p.id])}/{card.fields.length}

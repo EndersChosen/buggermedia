@@ -274,8 +274,9 @@ export function CreateScoreCardPage() {
   const onPickFile = (f: File | null | undefined) => {
     setError(null);
     if (!f) return;
+    // Leave the game name alone: the AI reads the proper name from the rule book,
+    // and a name typed here overrides it.
     setFile(f);
-    if (!gameName) setGameName(f.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').replace(/\b(rules?|rulebook|manual)\b/gi, '').trim());
   };
 
   const canGenerate =
@@ -569,7 +570,8 @@ function ReviewStep(props: ReviewStepProps) {
           <h2 className="text-xl font-bold text-gray-900 dark:text-white truncate">{card.name || 'Untitled game'}</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400">
             {card.layout === 'rounds' ? 'Scored every ' + (card.roundLabel || 'round').toLowerCase() : 'Score sheet'} ·{' '}
-            {card.minPlayers}–{card.maxPlayers} {card.playerLabel === 'team' ? 'teams' : 'players'} · {card.winner} total wins
+            {card.minPlayers === card.maxPlayers ? card.minPlayers : `${card.minPlayers}–${card.maxPlayers}`}{' '}
+            {card.playerLabel === 'team' ? 'teams' : 'players'} · {card.winner} total wins
             {props.genInfo && (
               <>
                 {' '}· made by {props.genInfo.model}

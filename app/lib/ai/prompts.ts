@@ -31,7 +31,10 @@ No strings, no property access, no assignments, no other functions.
 
 Names available:
 - rounds cards, in roundScore: every field id (this player's value), round (1-based round number), players (player count), total (this player's total before this round), playerIndex (1-based seat).
-- rounds cards, cross-player aggregates over one field for the current round: sumAll(field), maxAll(field), minAll(field), countAll(field) (players with a non-zero value), rankOf(field) (1 = highest value, ties share). Example "shoot the moon": maxAll(points) == 26 ? (points == 26 ? 0 : 26) : points
+- rounds cards, cross-player aggregates for the current round: sumAll(x), maxAll(x), minAll(x), countAll(x) (players for whom x is non-zero), rankOf(x) (1 = highest, ties share). x is evaluated once per player with THAT player's values, so it can combine fields, e.g. countAll(tricks == bid). Aggregates can't be nested.
+  When a condition is about ONE player meeting several conditions at once, combine them inside one aggregate. Example: everyone else loses 20 if some player both went out first and has no cards left (went_out is a checkbox):
+  countAll(went_out && cards_left == 0) > 0 && !(went_out && cards_left == 0) ? -20 : 0
+  Checking countAll(went_out) and minAll(cards_left) separately would be wrong, because different players could satisfy each part.
 - rounds cards, roundChecks: whole-round sanity checks; they can only read round, players and aggregates (wrap fields in sumAll etc.). Use severity "error" only for things that are impossible under the rules (e.g. tricks taken must sum to the cards dealt); use "warning" for likely typos.
 - categories cards, scoreExpression: "value" (what was entered) and players. Null means the value itself, or "points" for a checkbox.
 - categories cards, bonuses: field ids (each field's points after scoreExpression), earlier bonus ids, players.
@@ -46,13 +49,17 @@ Names available:
 
 If the game is played in fixed partnerships with a shared score (Spades, Bridge, Euchre, Canasta), set playerLabel to "team" so each column is a team, and write fields per team (e.g. team bid, team tricks). Set min/maxPlayers to the number of teams.
 
+# Worked examples
+
+Fill "examples" with 2-4 situations worked out by hand from the rules, each listing every player's inputs and the points the rules say they get (for rounds cards: points for that round, with "round" set when scoring depends on it; for categories cards: each player's total). Cover a normal case and each special case (bonuses, penalties, zero bids, shooting the moon, failed contracts...). Compute the expected numbers from the rules, not from your formulas. The app replays these examples through your formulas and rejects the card if they disagree, so they are how you catch your own mistakes.
+
 # Rules summary
 
 Fill "rules" with a short overview, the scoring rules as a concise list, how the game ends and is won, and "assumptions": every place where the rules were ambiguous, incomplete or had variants and which interpretation you chose (empty list if none). Base everything on the provided rules; use your general knowledge of the game only to fill gaps, and say so in assumptions.
 
 # Quality bar
 
-Before answering, mentally play two rounds (or fill a sheet) with realistic numbers and check every expression gives the points the rules say. Prefer the official/standard rules when the source describes several variants, and mention the variant in assumptions.
+Before answering, play through your examples and check every expression gives the points the rules say. Prefer the official/standard rules when the source describes several variants, and mention the variant in assumptions.
 
 Output only the JSON score card matching the schema, with schemaVersion 2.`;
 

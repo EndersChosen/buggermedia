@@ -142,33 +142,21 @@ export function scoreRound(
     }
   }
 
-  const valueOf = (playerId: string, fieldId: string): number | undefined => {
-    const field = card.fields.find((f) => f.id === fieldId);
-    if (!field) return undefined;
-    return effectiveValue(field, entry.values[playerId]?.[fieldId]);
-  };
-  const allValues = (fieldId: string): number[] | undefined => {
-    if (!card.fields.some((f) => f.id === fieldId)) return undefined;
-    return players.map((p) => valueOf(p.id, fieldId) as number);
-  };
-
-  players.forEach((p, index) => {
+  // Each player's identifier values: their fields plus round context.
+  const perPlayer: Array<Record<string, number>> = players.map((p, index) => {
     const vars: Record<string, number> = {
       round: roundNumber,
       players: players.length,
       total: totalsBefore[p.id] ?? 0,
       playerIndex: index + 1,
     };
-    for (const f of card.fields) vars[f.id] = valueOf(p.id, f.id) as number;
+    for (const f of card.fields) vars[f.id] = effectiveValue(f, entry.values[p.id]?.[f.id]);
+    return vars;
+  });
 
+  players.forEach((p, index) => {
     try {
-      scores[p.id] = card.roundScore
-        ? evaluateSource(card.roundScore, {
-            vars,
-            allValues,
-            ownValue: (fieldId) => valueOf(p.id, fieldId),
-          })
-        : 0;
+      scores[p.id] = card.roundScore ? evaluateSource(card.roundScore, { vars: perPlayer[index], perPlayer }) : 0;
     } catch (e) {
       scores[p.id] = 0;
       issues.push({
@@ -184,7 +172,7 @@ export function scoreRound(
     try {
       const ok = evaluateSource(check.expression, {
         vars: { round: roundNumber, players: players.length },
-        allValues,
+        perPlayer,
       });
       if (!ok) issues.push({ message: check.message, severity: check.severity });
     } catch (e) {

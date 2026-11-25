@@ -33,13 +33,22 @@ describe('expression parser and evaluator', () => {
   });
 
   it('evaluates aggregates across players', () => {
-    const values: Record<string, number[]> = { points: [26, 0, 0] };
-    const scope = { vars: { points: 0 }, allValues: (id: string) => values[id], ownValue: () => 0 };
+    const perPlayer = [
+      { points: 26, queen: 1, hearts: 13 },
+      { points: 0, queen: 0, hearts: 0 },
+      { points: 0, queen: 0, hearts: 0 },
+    ];
+    const scope = { vars: perPlayer[1], perPlayer };
     expect(evaluateSource('sumAll(points)', scope)).toBe(26);
     expect(evaluateSource('maxAll(points)', scope)).toBe(26);
     expect(evaluateSource('minAll(points)', scope)).toBe(0);
     expect(evaluateSource('countAll(points)', scope)).toBe(1);
     expect(evaluateSource('rankOf(points)', scope)).toBe(2);
+    // Per-player expressions inside aggregates
+    expect(evaluateSource('maxAll(hearts + 13 * queen)', scope)).toBe(26);
+    expect(evaluateSource('countAll(hearts == 13 && queen == 1)', scope)).toBe(1);
+    // Aggregates are unavailable without per-player data
+    expect(() => evaluateSource('sumAll(points)', { vars: { points: 1 } })).toThrow(/rounds/);
   });
 
   it('rejects unknown functions, bad syntax and code injection attempts', () => {
@@ -51,7 +60,8 @@ describe('expression parser and evaluator', () => {
     expect(() => parseExpression('(1 + 2')).toThrow(ExpressionError);
     expect(() => parseExpression('"text"')).toThrow(ExpressionError);
     expect(() => parseExpression('')).toThrow(ExpressionError);
-    expect(() => parseExpression('sumAll(1 + 2)')).toThrow(/one field name/);
+    expect(() => parseExpression('sumAll(maxAll(points))')).toThrow(/another aggregate/);
+    expect(() => parseExpression('sumAll(a, b)')).toThrow(/exactly one argument/);
     expect(() => parseExpression('max()')).toThrow(ExpressionError);
   });
 

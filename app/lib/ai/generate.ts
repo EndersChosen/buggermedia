@@ -2,7 +2,8 @@
  * Score card generation with structured output, validation and repair.
  *
  * Flow: build the request (rules text and/or an attached rule book) -> ask the
- * model for JSON constrained to the score card schema -> validate it
+ * model for JSON matching the score card schema (OpenAI: strict structured
+ * output; Claude: schema in the system prompt) -> validate it
  * (schema + semantic checks + dry run) -> if invalid, send the errors back in
  * the same conversation and ask for a corrected card (up to MAX_ATTEMPTS).
  *
@@ -11,7 +12,6 @@
 
 import 'server-only';
 import Anthropic from '@anthropic-ai/sdk';
-import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
 import OpenAI from 'openai';
 import { z } from 'zod';
 import { ScoreCardSchema, type ScoreCard } from '@/lib/scorecard/schema';
@@ -83,10 +83,29 @@ interface Provider {
 // Anthropic
 // ---------------------------------------------------------------------------
 
-let anthropicFormat: ReturnType<typeof zodOutputFormat> | undefined;
-function scoreCardOutputFormat() {
-  anthropicFormat ??= zodOutputFormat(ScoreCardSchema);
-  return anthropicFormat;
+/**
+ * System prompt for Claude: instructions plus the exact JSON Schema.
+ *
+ * Anthropic structured output (output_config.format) rejects this schema with
+ * "compiled grammar is too large" (many optional properties plus nested
+ * examples), so the schema is given in the prompt instead and the response is
+ * enforced by validateScoreCard() and the repair loop. The prompt is static,
+ * so it is prompt-cached.
+ */
+let anthropicSystem: string | undefined;
+function anthropicSystemPrompt(): string {
+  if (!anthropicSystem) {
+    const schema = z.toJSONSchema(ScoreCardSchema) as Record<string, unknown>;
+    delete schema.$schema;
+    anthropicSystem = `${SYSTEM_PROMPT}
+
+# Output format
+
+Respond with ONLY a JSON object (no prose, no code fences) that validates against this JSON Schema:
+
+${JSON.stringify(schema)}`;
+  }
+  return anthropicSystem;
 }
 
 class AnthropicProvider implements Provider {
@@ -119,19 +138,14 @@ class AnthropicProvider implements Provider {
       return { role: 'user', content };
     });
 
-    const format = scoreCardOutputFormat();
-
     try {
       const stream = this.client.beta.messages.stream({
         model: this.model,
         max_tokens: 32000,
         betas: ['server-side-fallback-2026-07-01'],
         fallbacks: 'default',
-        system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
-        output_config: {
-          effort: 'medium',
-          format: { type: 'json_schema', schema: format.schema },
-        },
+        system: [{ type: 'text', text: anthropicSystemPrompt(), cache_control: { type: 'ephemeral' } }],
+        output_config: { effort: 'medium' },
         messages,
       });
       const message = await stream.finalMessage();
@@ -313,7 +327,11 @@ async function runWithRepair(
 
     const result = validateScoreCard(candidate);
     if (result.ok && result.card) {
-      return { card: result.card, warnings: result.warnings, attempts: attempt, model: modelId, servedBy };
+      const warnings = [...result.warnings];
+      if (result.card.examples.length === 0) {
+        warnings.push('The AI gave no worked examples, so its formulas could not be cross-checked. Try the card with sample scores before relying on it.');
+      }
+      return { card: result.card, warnings, attempts: attempt, model: modelId, servedBy };
     }
 
     lastErrors = result.errors;

@@ -25,11 +25,12 @@ import {
   ROUND_CONTEXT_NAMES,
   SCORECARD_SCHEMA_VERSION,
   ScoreCardSchema,
+  fillOmittedNulls,
   VALUE_NAME,
   type ScoreCard,
   type ScoreField,
 } from './schema';
-import { emptyPlayerValues, fieldMaximum, scoreRound, summarizeCategories, type PlayerRef, type PlayerValues } from './engine';
+import { effectiveValue, emptyPlayerValues, fieldMaximum, scoreRound, summarizeCategories, type PlayerRef, type PlayerValues } from './engine';
 
 export interface ValidationResult {
   ok: boolean;
@@ -114,7 +115,7 @@ export function validateScoreCard(input: unknown): ValidationResult {
   // Be forgiving about a missing/old version marker; everything else is strict.
   const candidate =
     input && typeof input === 'object' && !Array.isArray(input)
-      ? { ...(input as Record<string, unknown>), schemaVersion: SCORECARD_SCHEMA_VERSION }
+      ? { ...(fillOmittedNulls(input) as Record<string, unknown>), schemaVersion: SCORECARD_SCHEMA_VERSION }
       : input;
 
   const parsed = ScoreCardSchema.safeParse(candidate);
@@ -179,9 +180,12 @@ export function validateScoreCard(input: unknown): ValidationResult {
     validateCategories(card, ids, errors, warnings);
   }
 
-  // --- Dry run ----------------------------------------------------------------
+  // --- Dry run and worked examples ---------------------------------------------
   if (errors.length === 0) {
     dryRun(card, errors);
+  }
+  if (errors.length === 0) {
+    checkExamples(card, errors);
   }
 
   return { ok: errors.length === 0, card, errors, warnings };
@@ -329,4 +333,76 @@ function dryRun(card: ScoreCard, errors: string[]) {
         .forEach((i) => report(i.message.replace(/Player \d+/, 'a player')));
     }
   }
+}
+
+const fmtNum = (n: number) => (Number.isInteger(n) ? String(n) : String(Math.round(n * 1000) / 1000));
+
+/**
+ * Replay the card's worked examples and report any that the formulas don't
+ * reproduce. These examples come from the rules, so a mismatch usually means
+ * a formula is wrong (or the example is).
+ */
+export function checkExamples(card: ScoreCard, errors: string[]) {
+  const fieldIds = new Set(card.fields.map((f) => f.id));
+  let reported = 0;
+  const report = (msg: string) => {
+    if (reported++ < 6) errors.push(msg);
+  };
+
+  card.examples.forEach((example, ei) => {
+    const where = `examples[${ei}] ("${example.description}")`;
+    if (example.players.length === 0) {
+      report(`${where}: add at least one player`);
+      return;
+    }
+    const players: PlayerRef[] = example.players.map((_, i) => ({ id: `p${i + 1}`, name: `player ${i + 1}` }));
+    const values: PlayerValues = {};
+    let badField = false;
+    example.players.forEach((p, i) => {
+      const v = emptyPlayerValues(card, [players[i]])[players[i].id];
+      for (const { field, value } of p.values) {
+        if (!fieldIds.has(field)) {
+          report(`${where}: unknown field "${field}"`);
+          badField = true;
+        }
+        v[field] = value;
+      }
+      values[players[i].id] = v;
+    });
+    if (badField) return;
+
+    const describeInputs = (i: number) =>
+      card.fields
+        .map((f) => `${f.id}=${fmtNum(effectiveValue(f, values[players[i].id][f.id]))}`)
+        .join(', ');
+
+    let actual: Record<string, number>;
+    if (card.layout === 'rounds') {
+      const round = example.round ?? 1;
+      const result = scoreRound(card, players, { values }, round, {});
+      const blocking = result.issues.filter((i) => i.severity === 'error');
+      if (blocking.length) {
+        report(`${where}: the example isn't a valid round for this card: ${blocking[0].message}`);
+        return;
+      }
+      actual = result.scores;
+    } else {
+      const result = summarizeCategories(card, players, values);
+      const blocking = result.issues.filter((i) => i.severity === 'error');
+      if (blocking.length) {
+        report(`${where}: the example isn't valid for this card: ${blocking[0].message}`);
+        return;
+      }
+      actual = result.totals;
+    }
+
+    example.players.forEach((p, i) => {
+      const got = actual[players[i].id] ?? 0;
+      if (Math.abs(got - p.expected) > 1e-6) {
+        report(
+          `${where}: ${players[i].name} should get ${fmtNum(p.expected)} but the formulas give ${fmtNum(got)} (inputs: ${describeInputs(i)}). Fix whichever of the formula or the example disagrees with the rules.`
+        );
+      }
+    });
+  });
 }

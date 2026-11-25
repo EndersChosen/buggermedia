@@ -432,6 +432,37 @@ export function CardEditor({ card, onChange }: CardEditorProps) {
         </Section>
       )}
 
+      <Section title={`Worked examples (${card.examples.length})`} defaultOpen={false}>
+        <p className="text-xs text-gray-500 dark:text-gray-400">
+          Situations from the rules with the scores each player should get. The card is checked against these every time
+          it changes; remove an example if you change the rules it describes.
+        </p>
+        {card.examples.length === 0 && <p className="text-sm text-gray-500">No examples.</p>}
+        {card.examples.map((ex, i) => (
+          <div key={i} className="flex items-start gap-2 rounded-md border border-gray-200 dark:border-gray-700 p-2 text-sm">
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-gray-900 dark:text-white">{ex.description}</p>
+              <ul className="text-xs text-gray-600 dark:text-gray-300 space-y-0.5 mt-1">
+                {ex.players.map((p, k) => (
+                  <li key={k}>
+                    {card.playerLabel === 'team' ? 'Team' : 'Player'} {k + 1}:{' '}
+                    {p.values.map((v) => `${v.field}=${v.value}`).join(', ') || 'defaults'} → <strong>{p.expected}</strong>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <button
+              type="button"
+              aria-label={`Remove example ${ex.description}`}
+              className="p-1 text-gray-500 hover:text-red-600"
+              onClick={() => set('examples', card.examples.filter((_, k) => k !== i))}
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
+        ))}
+      </Section>
+
       <Section title="Rules summary" defaultOpen={false}>
         <label className="block">
           <Label>Overview</Label>
