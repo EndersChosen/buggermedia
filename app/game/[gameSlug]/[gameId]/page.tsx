@@ -8,6 +8,8 @@ import { useGame } from '@/context/GameContext';
 import { isScoreCardSession, type ScoreCardSession } from '@/types/game.types';
 import { ScoreCardPlay, type ScoreCardState } from '@/features/scorecard/ScoreCardPlay';
 import { RulesPanel } from '@/features/scorecard/RulesPanel';
+import { ThemeShell } from '@/components/theme/ThemeShell';
+import { themeForCard } from '@/lib/themes';
 
 export default function ScoreCardGamePage() {
   const params = useParams<{ gameSlug: string; gameId: string }>();
@@ -70,6 +72,7 @@ function SavedGame({ gameId }: { gameId: string }) {
   };
 
   return (
+    <ThemeShell theme={themeForCard(game.card)}>
     <div className="space-y-6">
       <header className="flex items-center gap-3 min-w-0">
         <Button variant="secondary" size="sm" onClick={() => router.push('/')} aria-label="Back to games">
@@ -77,7 +80,7 @@ function SavedGame({ gameId }: { gameId: string }) {
           <span className="hidden sm:inline">Games</span>
         </Button>
         <div className="min-w-0">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white truncate">{game.card.name}</h1>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white truncate">{game.card.name}</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">
             {game.players.length} {game.card.playerLabel === 'team' ? 'teams' : 'players'} ·{' '}
             {game.card.winner === 'lowest' ? 'lowest' : 'highest'} score wins
@@ -95,6 +98,7 @@ function SavedGame({ gameId }: { gameId: string }) {
 
       <RulesPanel card={game.card} />
     </div>
+    </ThemeShell>
   );
 }
 

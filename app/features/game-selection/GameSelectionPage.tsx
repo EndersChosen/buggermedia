@@ -9,7 +9,8 @@ import { useGame } from '@/context/GameContext';
 import { useCustomCards } from '@/hooks/useCustomCards';
 import { getAllGames, getAllGamesWithAI, GAME_REGISTRY } from './gameRegistry';
 import { GameGrid } from './components/GameGrid';
-import type { GameCardAction } from './components/GameCard';
+import { ThemeBand, type GameCardAction } from './components/GameCard';
+import { BUILT_IN_THEMES, guessTheme, isThemeId, themeForCard, type ThemeId } from '@/lib/themes';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
@@ -71,6 +72,17 @@ export function GameSelectionPage() {
       })),
     [customCards]
   );
+
+  const themeFor = (game: { id: string; name: string; description: string; source?: string; theme?: string | null }): ThemeId => {
+    if (BUILT_IN_THEMES[game.id]) return BUILT_IN_THEMES[game.id];
+    const custom = customCards.find((c) => c.slug === game.id);
+    if (custom) return themeForCard(custom.card);
+    if (isThemeId(game.theme)) return game.theme;
+    return guessTheme(`${game.name} ${game.description}`);
+  };
+
+  const sessionTheme = (game: GameSession): ThemeId =>
+    isScoreCardSession(game) ? themeForCard(game.card) : BUILT_IN_THEMES[game.gameType] ?? guessTheme(sessionTitle(game));
 
   const openSetup = (target: SetupTarget) => {
     setSetup(target);
@@ -240,7 +252,9 @@ export function GameSelectionPage() {
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Active Games</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {activeGames.map((game) => (
-              <Card key={game.id}>
+              <div key={game.id} data-theme={sessionTheme(game)} className="theme-shell">
+              <Card className="h-full">
+                <ThemeBand theme={sessionTheme(game)} />
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
@@ -274,6 +288,7 @@ export function GameSelectionPage() {
                   </div>
                 </CardContent>
               </Card>
+              </div>
             ))}
           </div>
         </div>
@@ -282,13 +297,13 @@ export function GameSelectionPage() {
       {customDefs.length > 0 && (
         <div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">My Score Cards</h2>
-          <GameGrid games={customDefs} onGameSelect={handleGameSelect} actionsFor={actionsFor} />
+          <GameGrid games={customDefs} onGameSelect={handleGameSelect} actionsFor={actionsFor} themeFor={themeFor} />
         </div>
       )}
 
       <div>
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Game Library</h2>
-        <GameGrid games={[...builtIn, ...sharedGames]} onGameSelect={handleGameSelect} actionsFor={actionsFor} />
+        <GameGrid games={[...builtIn, ...sharedGames]} onGameSelect={handleGameSelect} actionsFor={actionsFor} themeFor={themeFor} />
         {isLoadingGames && (
           <p className="mt-4 flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
             <Loader2 className="w-4 h-4 animate-spin" /> Loading shared games…
@@ -302,6 +317,7 @@ export function GameSelectionPage() {
         )}
       </div>
 
+      <div data-theme={setup ? themeFor({ id: setup.id, name: setup.name, description: '', theme: setup.card?.theme }) : undefined} className={setup ? 'theme-shell' : ''}>
       <Modal isOpen={Boolean(setup)} onClose={() => setSetup(null)} title={`Setup: ${setup?.name ?? ''}`} size="md">
         <form
           className="space-y-4"
@@ -376,6 +392,7 @@ export function GameSelectionPage() {
           </div>
         </form>
       </Modal>
+      </div>
     </div>
   );
 }

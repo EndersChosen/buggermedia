@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/Button';
+import { Celebration } from '@/components/theme/ThemeShell';
 import { Plus } from 'lucide-react';
 import { useSpadesGame } from './useSpadesGame';
 import { SpadesScoreBoard } from './components/SpadesScoreBoard';
@@ -82,8 +83,9 @@ export function SpadesGame() {
           </div>
           
           {gameState.totalScoreA >= 500 || gameState.totalScoreB >= 500 ? (
-            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-              <p className="text-center text-lg font-bold">
+            <div className="relative mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <Celebration theme="felt" />
+              <p className="text-center text-2xl font-bold theme-heading anim-pop">
                 {gameState.totalScoreA > gameState.totalScoreB 
                   ? '🎉 Team A Wins!'
                   : gameState.totalScoreB > gameState.totalScoreA

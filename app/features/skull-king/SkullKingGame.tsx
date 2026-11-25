@@ -8,6 +8,7 @@ import { SKScoreBoard } from './components/SKScoreBoard';
 import { SKScoreInput } from './components/SKScoreInput';
 import { SKRoundTracker } from './components/SKRoundTracker';
 import { Button } from '@/components/ui/Button';
+import { Celebration } from '@/components/theme/ThemeShell';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { EnhancedRulesModal } from '@/features/rules/components/EnhancedRulesModal';
 import { skRules } from './skRules';
@@ -98,7 +99,7 @@ export function SkullKingGame() {
           <Skull className="w-12 h-12 text-current" />
           <div>
             <h1 className="text-4xl font-bold sk-title">Skull King</h1>
-            <p className="text-amber-100 mt-1">
+            <p className="mt-1" style={{ color: "#f4e4c1", opacity: 0.9 }}>
               {game.players.length} players • 10 rounds
             </p>
           </div>
@@ -106,14 +107,15 @@ export function SkullKingGame() {
       </div>
 
       {gameComplete && winner && (
-        <div className="sk-winner-banner p-6 rounded-lg">
+        <div className="sk-winner-banner p-6 rounded-lg relative anim-rise">
+          <Celebration theme="pirate" />
           <div className="flex items-center gap-4 mb-4">
             <Trophy className="w-12 h-12 text-red-900" />
             <div>
-              <h2 className="text-3xl font-bold text-gray-900" style={{ fontFamily: 'Georgia, serif' }}>
+              <h2 className="text-3xl font-bold" style={{ color: '#1a2332' }}>
                 Game Complete!
               </h2>
-              <p className="text-xl text-gray-800 mt-1">
+              <p className="text-xl mt-1" style={{ color: '#2c3e50' }}>
                 🏴‍☠️ {winner.player.name} wins with {winner.score} points!
               </p>
             </div>

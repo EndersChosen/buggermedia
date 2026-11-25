@@ -18,6 +18,8 @@ import {
   type RoundEntry,
 } from '@/lib/scorecard/engine';
 import { FieldInput } from './FieldInput';
+import { Celebration } from '@/components/theme/ThemeShell';
+import { themeForCard } from '@/lib/themes';
 
 export interface RoundsCardProps {
   card: ScoreCard;
@@ -109,15 +111,18 @@ export function RoundsCard({ card, players, rounds, draft, onChange, onFinish }:
             <div className="truncate font-medium text-gray-900 dark:text-white" title={s.player.name}>
               {s.player.name}
             </div>
-            <div className="text-2xl font-bold tabular-nums text-gray-900 dark:text-white" data-testid={`total-${s.player.id}`}>
-              {fmt(s.total)}
+            <div className="text-2xl font-bold tabular-nums text-gray-900 dark:text-white theme-heading" data-testid={`total-${s.player.id}`}>
+              <span key={s.total} className="anim-pop">
+                {fmt(s.total)}
+              </span>
             </div>
           </div>
         ))}
       </section>
 
       {gameOver && !isEditing && (
-        <section className="rounded-lg border-2 border-green-500 bg-green-50 dark:bg-green-900/20 p-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+        <section className="relative anim-rise anim-glow rounded-lg border-2 border-green-500 bg-green-50 dark:bg-green-900/20 p-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+          <Celebration theme={themeForCard(card)} />
           <div className="flex items-center gap-3">
             <Trophy className="w-8 h-8 text-green-600" />
             <div>
@@ -160,7 +165,7 @@ export function RoundsCard({ card, players, rounds, draft, onChange, onFinish }:
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {players.map((p) => (
-              <div key={p.id} className="rounded-md border border-gray-200 dark:border-gray-700 p-3 space-y-2">
+              <div key={p.id} className="anim-rise rounded-md border border-gray-200 dark:border-gray-700 p-3 space-y-2">
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-medium text-gray-900 dark:text-white truncate">{p.name}</span>
                   <span
@@ -261,7 +266,7 @@ export function RoundsCard({ card, players, rounds, draft, onChange, onFinish }:
             </thead>
             <tbody>
               {rounds.map((_, i) => (
-                <tr key={i} className={`border-t border-gray-100 dark:border-gray-700 ${editingIndex === i ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}>
+                <tr key={i} className={`anim-rise border-t border-gray-100 dark:border-gray-700 ${editingIndex === i ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}>
                   <td className="px-3 py-2 sticky left-0 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300">{i + 1}</td>
                   {players.map((p) => (
                     <td key={p.id} className="px-3 py-2 text-right tabular-nums">

@@ -27,6 +27,8 @@ import { CardEditor } from '@/features/scorecard/CardEditor';
 import { ScoreCardPlay, type ScoreCardState } from '@/features/scorecard/ScoreCardPlay';
 import { RulesPanel } from '@/features/scorecard/RulesPanel';
 import { blankCard } from './blankCard';
+import { ThemeShell } from '@/components/theme/ThemeShell';
+import { THEMES, themeForCard } from '@/lib/themes';
 
 type Step = 'input' | 'generating' | 'review';
 type InputMethod = 'text' | 'file';
@@ -700,10 +702,17 @@ function PreviewPane({ card, valid }: { card: ScoreCard; valid: boolean }) {
     setState({ rounds: [], sheet: emptyPlayerValues(card, players), draft: null });
   }
 
+  const theme = themeForCard(card);
   return (
-    <section className="rounded-lg border-2 border-dashed border-blue-300 dark:border-blue-800 p-3 space-y-3">
+    <ThemeShell theme={theme} contained>
+    <section className="space-y-3">
       <div className="flex items-center justify-between gap-2">
-        <h3 className="font-semibold text-gray-900 dark:text-white">Try it with sample {card.playerLabel === 'team' ? 'teams' : 'players'}</h3>
+        <h3 className="font-semibold text-gray-900 dark:text-white">
+          Try it with sample {card.playerLabel === 'team' ? 'teams' : 'players'}
+          <span className="block text-xs font-normal text-gray-600" style={{ fontFamily: 'var(--theme-body)' }}>
+            Theme: {THEMES[theme].label}
+          </span>
+        </h3>
         <Button variant="ghost" size="sm" onClick={() => setState({ rounds: [], sheet: emptyPlayerValues(card, players), draft: null })}>
           Reset
         </Button>
@@ -714,5 +723,6 @@ function PreviewPane({ card, valid }: { card: ScoreCard; valid: boolean }) {
         <p className="text-sm text-gray-500 dark:text-gray-400">Fix the problems listed above to try the card.</p>
       )}
     </section>
+    </ThemeShell>
   );
 }

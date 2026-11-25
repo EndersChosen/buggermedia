@@ -1,7 +1,20 @@
 @import "tailwindcss";
+@import "./themes.css";
+
+/*
+ * dark: utilities follow the OS setting, except inside a game theme
+ * ([data-theme]), which defines its own complete palette.
+ */
+@custom-variant dark {
+  @media (prefers-color-scheme: dark) {
+    &:where(:not([data-theme], [data-theme] *)) {
+      @slot;
+    }
+  }
+}
 
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: var(--font-inter), Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
   color-scheme: light dark;

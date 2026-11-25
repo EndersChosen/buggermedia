@@ -53,13 +53,17 @@ export async function GET() {
           .from(aiGeneratedGames)
           .where(eq(aiGeneratedGames.status, 'ready')),
         db
-          .selectDistinct({ gameId: gameDefinitions.gameId })
+          .selectDistinct({
+            gameId: gameDefinitions.gameId,
+            theme: sql<string | null>`${gameDefinitions.definition}->>'theme'`,
+          })
           .from(gameDefinitions)
           .where(sql`${gameDefinitions.definition}->>'schemaVersion' = '2'`),
       ])
     );
 
     const withCard = new Set(structured.map((s) => s.gameId));
+    const themes = new Map(structured.map((s) => [s.gameId, s.theme]));
     const aiGenerated = games
       .filter((g) => withCard.has(g.id) || g.hasHtml)
       .map((g) => ({
@@ -70,6 +74,7 @@ export async function GET() {
         maxPlayers: g.maxPlayers,
         source: 'ai-generated' as const,
         legacy: !withCard.has(g.id),
+        theme: themes.get(g.id) ?? null,
         rules: emptyRules,
       }));
 

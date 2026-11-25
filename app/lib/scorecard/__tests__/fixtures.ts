@@ -22,6 +22,7 @@ export const heartsCard: ScoreCard = {
   bonuses: [],
   end: { type: 'target-score', rounds: null, roundsExpression: null, target: 100 },
   winner: 'lowest',
+  theme: null,
   examples: [],
   rules: rules('Trick-taking game.'),
 };
@@ -47,6 +48,7 @@ export const biddingCard: ScoreCard = {
   bonuses: [],
   end: { type: 'fixed-rounds', rounds: 10, roundsExpression: null, target: null },
   winner: 'highest',
+  theme: null,
   examples: [],
   rules: rules('Bidding game.'),
 };
@@ -98,6 +100,7 @@ export const yahtzeeCard: ScoreCard = {
   ],
   end: { type: 'all-filled', rounds: null, roundsExpression: null, target: null },
   winner: 'highest',
+  theme: null,
   examples: [],
   rules: rules('Dice game.'),
 };
@@ -132,6 +135,7 @@ export const ticketToRideCard: ScoreCard = {
   bonuses: [],
   end: { type: 'all-filled', rounds: null, roundsExpression: null, target: null },
   winner: 'highest',
+  theme: null,
   examples: [],
   rules: rules('Train game.'),
 };

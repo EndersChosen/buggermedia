@@ -2,14 +2,16 @@
 
 import { GameDefinition } from '@/types/game.types';
 import { GameCard, type GameCardAction } from './GameCard';
+import type { ThemeId } from '@/lib/themes';
 
 interface GameGridProps {
   games: GameDefinition[];
   onGameSelect: (game: GameDefinition) => void;
   actionsFor?: (game: GameDefinition) => GameCardAction[];
+  themeFor: (game: GameDefinition) => ThemeId;
 }
 
-export function GameGrid({ games, onGameSelect, actionsFor }: GameGridProps) {
+export function GameGrid({ games, onGameSelect, actionsFor, themeFor }: GameGridProps) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
       {games.map((game) => (
@@ -18,6 +20,7 @@ export function GameGrid({ games, onGameSelect, actionsFor }: GameGridProps) {
           game={game}
           onClick={() => onGameSelect(game)}
           actions={actionsFor?.(game)}
+          theme={themeFor(game)}
         />
       ))}
     </div>

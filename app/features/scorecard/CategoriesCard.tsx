@@ -13,6 +13,8 @@ import {
   type PlayerValues,
 } from '@/lib/scorecard/engine';
 import { FieldInput } from './FieldInput';
+import { Celebration } from '@/components/theme/ThemeShell';
+import { themeForCard } from '@/lib/themes';
 
 export interface CategoriesCardProps {
   card: ScoreCard;
@@ -43,7 +45,8 @@ export function CategoriesCard({ card, players, sheet, onChange, onFinish }: Cat
   return (
     <div className="space-y-4">
       {complete && (
-        <section className="rounded-lg border-2 border-green-500 bg-green-50 dark:bg-green-900/20 p-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+        <section className="relative anim-rise anim-glow rounded-lg border-2 border-green-500 bg-green-50 dark:bg-green-900/20 p-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+          <Celebration theme={themeForCard(card)} />
           <div className="flex items-center gap-3">
             <Trophy className="w-8 h-8 text-green-600" />
             <p className="font-bold text-lg text-gray-900 dark:text-white">
@@ -157,7 +160,9 @@ export function CategoriesCard({ card, players, sheet, onChange, onFinish }: Cat
                     }`}
                     data-testid={`total-${p.id}`}
                   >
-                    {fmt(summary.totals[p.id] ?? 0)}
+                    <span key={summary.totals[p.id] ?? 0} className="anim-pop theme-heading">
+                      {fmt(summary.totals[p.id] ?? 0)}
+                    </span>
                   </td>
                 );
               })}

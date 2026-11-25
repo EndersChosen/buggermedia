@@ -5,6 +5,12 @@
  * prompt-cached across requests.
  */
 
+import { THEMES } from '@/lib/themes';
+
+const THEME_GUIDE = Object.values(THEMES)
+  .map((t) => `- "${t.id}": ${t.suits}`)
+  .join('\n');
+
 export const SYSTEM_PROMPT = `You design score cards for tabletop games (card games, dice games, board games). You read a game's rules and produce a JSON score card that a web app renders and scores automatically. The app never runs code you write; all maths is done by small expressions in the restricted language described below.
 
 # Choosing a layout
@@ -52,6 +58,11 @@ If the game is played in fixed partnerships with a shared score (Spades, Bridge,
 # Worked examples
 
 Fill "examples" with 2-4 situations worked out by hand from the rules, each listing every player's inputs and the points the rules say they get (for rounds cards: points for that round, with "round" set when scoring depends on it; for categories cards: each player's total). Cover a normal case and each special case (bonuses, penalties, zero bids, shooting the moon, failed contracts...). Compute the expected numbers from the rules, not from your formulas. The app replays these examples through your formulas and rejects the card if they disagree, so they are how you catch your own mistakes.
+
+# Visual theme
+
+Set "theme" to the style that best fits the game's subject and mood. The app uses it for colours, fonts and background animation:
+${THEME_GUIDE}
 
 # Rules summary
 

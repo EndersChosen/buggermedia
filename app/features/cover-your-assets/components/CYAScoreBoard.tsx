@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { CYAGameSession } from '@/types/game.types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Trophy, ChevronDown, ChevronUp } from 'lucide-react';
@@ -68,7 +68,7 @@ export function CYAScoreBoard({ game }: CYAScoreBoardProps) {
                 const isExpanded = expandedRounds.has(round.roundNumber);
 
                 return (
-                  <>
+                  <Fragment key={round.roundNumber}>
                     <tr
                       key={round.roundNumber}
                       className={`border-b border-gray-100 dark:border-gray-700/50 ${hasCardCollections ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50' : ''}`}
@@ -118,7 +118,7 @@ export function CYAScoreBoard({ game }: CYAScoreBoardProps) {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 );
               })}
               <tr className="border-t-2 border-gray-300 dark:border-gray-600 font-semibold bg-gray-50 dark:bg-gray-700/50">

@@ -118,6 +118,8 @@ export interface GameDefinition {
   source?: 'hardcoded' | 'ai-generated' | 'custom';
   /** Shared library entries made by the old HTML generator (no structured card). */
   legacy?: boolean;
+  /** Visual theme id (see lib/themes). */
+  theme?: string | null;
 }
 
 export interface RuleSection {

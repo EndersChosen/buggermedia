@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { ArrowDown, ArrowUp, ChevronDown, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { emptyField, type ScoreCard, type ScoreField } from '@/lib/scorecard/schema';
+import { THEMES, THEME_IDS, guessTheme, isThemeId } from '@/lib/themes';
 
 interface CardEditorProps {
   card: ScoreCard;
@@ -199,6 +200,15 @@ export function CardEditor({ card, onChange }: CardEditorProps) {
                     : { type: 'all-filled', rounds: null, roundsExpression: null, target: null },
               })
             }
+          />
+          <Select
+            label="Look & feel"
+            value={card.theme ?? 'auto'}
+            options={[
+              { value: 'auto', label: `Automatic (${THEMES[guessTheme(`${card.name} ${card.description}`)].label})` },
+              ...THEME_IDS.map((id) => ({ value: id, label: THEMES[id].label })),
+            ]}
+            onChange={(v) => set('theme', isThemeId(v) ? v : null)}
           />
           {isRounds && (
             <TextInput label="Round called" value={card.roundLabel ?? ''} onChange={(v) => set('roundLabel', v || null)} placeholder="Round" />

@@ -20,6 +20,7 @@
  */
 
 import { z } from 'zod';
+import { THEME_IDS } from '@/lib/themes';
 
 export const SCORECARD_SCHEMA_VERSION = 2;
 
@@ -177,6 +178,10 @@ export const ScoreCardSchema = z
       .describe('Categories layout: computed bonus rows. Empty if none (always empty for rounds).'),
     end: EndConditionSchema,
     winner: z.enum(['highest', 'lowest']).describe('Whether the highest or lowest total wins'),
+    theme: z
+      .enum(THEME_IDS)
+      .nullable()
+      .describe("Visual theme that best matches the game's look and feel (null = pick automatically)"),
     examples: z
       .array(ExampleSchema)
       .describe(
@@ -244,6 +249,7 @@ export function fillOmittedNulls(input: unknown): unknown {
   const fieldKeys = ['section', 'helpText', 'min', 'max', 'maxExpression', 'step', 'defaultValue', 'points', 'options', 'scoreExpression'];
   if (!('roundLabel' in card)) card.roundLabel = null;
   if (!('roundScore' in card)) card.roundScore = null;
+  if (!('theme' in card)) card.theme = null;
   if (!('roundChecks' in card)) card.roundChecks = [];
   if (!('bonuses' in card)) card.bonuses = [];
   if (!('examples' in card)) card.examples = [];
