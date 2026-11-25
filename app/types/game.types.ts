@@ -1,4 +1,5 @@
-import type { DynamicGameSession, DynamicGameDefinition } from '@/lib/types/dynamic-game.types';
+import type { ScoreCard } from '@/lib/scorecard/schema';
+import type { PlayerValues, RoundEntry } from '@/lib/scorecard/engine';
 
 // Base types
 export type HardcodedGameType = 'cover-your-assets' | 'skull-king' | 'spades';
@@ -80,7 +81,29 @@ export interface SpadesGameSession extends BaseGameSession {
   bagsB: number;
 }
 
-export type GameSession = CYAGameSession | SKGameSession | SpadesGameSession | DynamicGameSession;
+// AI-generated / custom score card games
+export interface ScoreCardSession extends BaseGameSession {
+  kind: 'scorecard';
+  card: ScoreCard;
+  /** Completed rounds (rounds layout). */
+  rounds: RoundEntry[];
+  /** Score sheet values (categories layout). */
+  sheet: PlayerValues;
+  /** Unsaved inputs for the round being entered (rounds layout). */
+  draft?: PlayerValues | null;
+}
+
+/** Sessions saved by older versions of the app for AI games; kept so they can be listed and deleted. */
+export interface LegacyDynamicSession extends BaseGameSession {
+  kind?: undefined;
+  dynamicDefinition?: { metadata?: { name?: string } } | null;
+}
+
+export type GameSession = CYAGameSession | SKGameSession | SpadesGameSession | ScoreCardSession | LegacyDynamicSession;
+
+export function isScoreCardSession(game: GameSession | null | undefined): game is ScoreCardSession {
+  return Boolean(game && (game as ScoreCardSession).kind === 'scorecard' && (game as ScoreCardSession).card);
+}
 
 // Game registry
 export interface GameDefinition {
@@ -91,8 +114,12 @@ export interface GameDefinition {
   maxPlayers: number;
   imageUrl?: string;
   rules: GameRules;
-  source?: 'hardcoded' | 'ai-generated'; // Track game origin
-  dynamicDefinition?: DynamicGameDefinition; // For AI-generated games
+  /** hardcoded = built-in tracker, ai-generated = shared library, custom = saved in this browser */
+  source?: 'hardcoded' | 'ai-generated' | 'custom';
+  /** Shared library entries made by the old HTML generator (no structured card). */
+  legacy?: boolean;
+  /** Visual theme id (see lib/themes). */
+  theme?: string | null;
 }
 
 export interface RuleSection {
@@ -128,5 +155,6 @@ export interface StorageData {
 export const STORAGE_KEYS = {
   ACTIVE_GAMES: 'cardgames:active',
   COMPLETED_GAMES: 'cardgames:completed',
-  SETTINGS: 'cardgames:settings'
+  SETTINGS: 'cardgames:settings',
+  CUSTOM_CARDS: 'cardgames:customCards',
 } as const;

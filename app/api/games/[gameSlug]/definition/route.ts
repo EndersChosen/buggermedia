@@ -1,43 +1,26 @@
 import { NextResponse } from 'next/server';
+import { desc, eq } from 'drizzle-orm';
 import { getDb, isDatabaseConfigured } from '@/lib/db';
-import { aiGeneratedGames, gameDefinitions, gameRules } from '@/lib/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { aiGeneratedGames, gameDefinitions } from '@/lib/db/schema';
+import { validateScoreCard } from '@/lib/scorecard/validate';
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ gameSlug: string }> }
-) {
+export const dynamic = 'force-dynamic';
+
+export async function GET(_request: Request, { params }: { params: Promise<{ gameSlug: string }> }) {
+  if (!isDatabaseConfigured()) {
+    return NextResponse.json({ error: 'Shared library unavailable (database not configured).' }, { status: 503 });
+  }
+
   try {
-    if (!isDatabaseConfigured()) {
-      return NextResponse.json(
-        {
-          error:
-            'Database not configured. Set POSTGRES_URL / DATABASE_URL to fetch AI-generated game definitions.',
-        },
-        { status: 503 }
-      );
-    }
-
     const db = getDb();
     const { gameSlug } = await params;
 
-    // Find the game
-    const games = await db
-      .select()
-      .from(aiGeneratedGames)
-      .where(eq(aiGeneratedGames.gameSlug, gameSlug))
-      .limit(1);
-
+    const games = await db.select().from(aiGeneratedGames).where(eq(aiGeneratedGames.gameSlug, gameSlug)).limit(1);
     if (games.length === 0) {
-      return NextResponse.json(
-        { error: 'Game not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Game not found' }, { status: 404 });
     }
-
     const game = games[0];
 
-    // Get the game definition (latest version)
     const definitions = await db
       .select()
       .from(gameDefinitions)
@@ -45,12 +28,7 @@ export async function GET(
       .orderBy(desc(gameDefinitions.version))
       .limit(1);
 
-    // Get the game rules
-    const rules = await db
-      .select()
-      .from(gameRules)
-      .where(eq(gameRules.gameId, game.id))
-      .limit(1);
+    const validated = definitions[0] ? validateScoreCard(definitions[0].definition) : null;
 
     return NextResponse.json({
       metadata: {
@@ -61,14 +39,12 @@ export async function GET(
         maxPlayers: game.maxPlayers,
         source: 'ai-generated',
       },
-      definition: definitions[0]?.definition || null,
-      rules: rules[0]?.rules || null,
+      card: validated?.ok ? validated.card : null,
+      legacy: !validated?.ok,
+      hasLegacyHtml: Boolean(game.htmlScorecard),
     });
   } catch (error) {
     console.error('Error fetching game definition:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

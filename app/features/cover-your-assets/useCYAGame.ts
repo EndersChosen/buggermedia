@@ -1,18 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { CYAGameSession, CYARound } from '@/types/game.types';
 import { useGame } from '@/context/GameContext';
 
 export function useCYAGame(gameId: string) {
-  const { currentGame, updateGame, completeGame } = useGame();
-  const [game, setGame] = useState<CYAGameSession | null>(null);
-
-  useEffect(() => {
-    if (currentGame && currentGame.id === gameId && currentGame.gameType === 'cover-your-assets') {
-      setGame(currentGame as CYAGameSession);
-    }
-  }, [currentGame, gameId]);
+  const { activeGames, updateGame, completeGame } = useGame();
+  const found = activeGames.find((g) => g.id === gameId);
+  const game = found && found.gameType === 'cover-your-assets' ? (found as CYAGameSession) : null;
 
   const addRound = (scores: Record<string, number>, cardCollections?: Record<string, Record<string, number>>) => {
     if (!game) return;
@@ -69,7 +63,7 @@ export function useCYAGame(gameId: string) {
 
     const maxScore = Math.max(...Object.values(game.totalScores));
     const winnerEntry = Object.entries(game.totalScores).find(
-      ([_, score]) => score === maxScore
+      ([, score]) => score === maxScore
     );
 
     if (!winnerEntry) return null;

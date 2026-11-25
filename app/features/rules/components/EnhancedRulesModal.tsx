@@ -234,7 +234,7 @@ export function EnhancedRulesModal({ isOpen, onClose, gameName, rules }: Enhance
                 filteredSections.map((section) => renderSection(section))
               ) : (
                 <p className="text-center text-gray-500 dark:text-gray-400 py-8">
-                  No results found for "{searchQuery}"
+                  No results found for &ldquo;{searchQuery}&rdquo;
                 </p>
               )}
             </div>

@@ -1,5 +1,6 @@
-import { UploadGamePage } from '@/features/upload/UploadGamePage';
+import { redirect } from 'next/navigation';
 
-export default function Upload() {
-  return <UploadGamePage />;
+// The old upload page now lives at /create.
+export default function UploadRedirect() {
+  redirect('/create');
 }

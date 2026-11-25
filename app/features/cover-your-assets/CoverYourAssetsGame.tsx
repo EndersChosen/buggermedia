@@ -8,6 +8,7 @@ import { CYAScoreBoard } from './components/CYAScoreBoard';
 import { CYAScoreInput } from './components/CYAScoreInput';
 import { CYAScoreCalculator } from './components/CYAScoreCalculator';
 import { Button } from '@/components/ui/Button';
+import { Celebration } from '@/components/theme/ThemeShell';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { EnhancedRulesModal } from '@/features/rules/components/EnhancedRulesModal';
 import { cyaRules } from './cyaRules';
@@ -81,7 +82,8 @@ export function CoverYourAssetsGame() {
       </div>
 
       {winner && (
-        <Card className="bg-gradient-to-r from-yellow-50 to-yellow-100 dark:from-yellow-900/30 dark:to-yellow-800/30 border-yellow-300 dark:border-yellow-700">
+        <Card className="relative anim-rise anim-glow bg-gradient-to-r from-yellow-50 to-yellow-100 dark:from-yellow-900/30 dark:to-yellow-800/30 border-yellow-300 dark:border-yellow-700">
+          <Celebration theme="vault" />
           <CardHeader>
             <div className="flex items-center gap-3">
               <Trophy className="w-8 h-8 text-yellow-600 dark:text-yellow-400" />
