@@ -25,7 +25,7 @@ Expressions use a small, safe language (`app/lib/scorecard/expression.ts`): numb
 ```bash
 npm install
 npm run dev        # http://localhost:3000
-npm test           # Vitest: expression language, engine, validator
+npm test           # Vitest: expression language, engine, validator, rate limiter
 npm run lint
 npm run build
 ```
@@ -37,6 +37,15 @@ npm run build
 | `ANTHROPIC_API_KEY` | Claude models (default: Claude Opus 5.5) |
 | `OPENAI_API_KEY` | Optional GPT-5.2 option |
 | `POSTGRES_URL` / `DATABASE_URL` | Shared library of published score cards (optional; without it cards are saved per browser only) |
+| `KV_REST_API_URL` + `KV_REST_API_TOKEN` (or `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN`) | Upstash Redis for rate limits shared across serverless instances. Without them, limits are in-memory per instance (fine locally, not a real quota in production). |
+| `AI_DAILY_GENERATION_LIMIT` | Optional site-wide cap on AI generations + refinements per 24 h (default 200) |
+
+### Rate limits (`app/lib/server/rate-limit.ts`)
+
+- AI generate/refine: 20 per IP per hour, plus the site-wide daily cap above. Only requests that would reach the model count.
+- Publishing to the shared library: 10 per IP per hour.
+
+Limits use an Upstash sliding window when Redis is configured. If Redis is missing, errors or times out, the in-memory window is used instead.
 
 **Careful:** if `.env.local` points at the production database, local runs read and write the live shared library. To test locally without it, add a `.env.development.local` with empty `POSTGRES_URL=`, `DATABASE_URL=`, `POSTGRES_HOST=`, `POSTGRES_USER=`, `POSTGRES_PASSWORD=` and `POSTGRES_DATABASE=` lines.
 
